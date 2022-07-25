@@ -1,0 +1,31 @@
+Arguments: 
+  /usr/local/bin/node /Users/lilaoban/.yarn/bin/yarn.js build
+
+PATH: 
+  /Users/lilaoban/.yarn/bin:/Users/lilaoban/.config/yarn/global/node_modules/.bin:/Users/lilaoban/anaconda/anaconda3/bin:/Users/lilaoban/anaconda/anaconda3/condabin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  14.18.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/lilaoban/kungfu-trader/action-traversal-packages/package.json: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at /Users/lilaoban/.yarn/lib/cli.js:1629:59
+      at Generator.next (<anonymous>)
+      at step (/Users/lilaoban/.yarn/lib/cli.js:310:30)
+      at /Users/lilaoban/.yarn/lib/cli.js:321:13
+
+npm manifest: 
+  
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
