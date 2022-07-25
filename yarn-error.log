@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/bin/node /Users/lilaoban/.yarn/bin/yarn.js build
+  /usr/local/bin/node /Users/lilaoban/.yarn/bin/yarn.js init
 
 PATH: 
   /Users/lilaoban/.yarn/bin:/Users/lilaoban/.config/yarn/global/node_modules/.bin:/Users/lilaoban/anaconda/anaconda3/bin:/Users/lilaoban/anaconda/anaconda3/condabin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
@@ -14,15 +14,27 @@ Platform:
   darwin x64
 
 Trace: 
-  SyntaxError: /Users/lilaoban/kungfu-trader/action-traversal-packages/package.json: Unexpected end of JSON input
-      at JSON.parse (<anonymous>)
-      at /Users/lilaoban/.yarn/lib/cli.js:1629:59
-      at Generator.next (<anonymous>)
-      at step (/Users/lilaoban/.yarn/lib/cli.js:310:30)
-      at /Users/lilaoban/.yarn/lib/cli.js:321:13
+  Error: canceled
+      at Interface.<anonymous> (/Users/lilaoban/.yarn/lib/cli.js:137150:13)
+      at Interface.emit (events.js:400:28)
+      at Interface._ttyWrite (readline.js:1001:16)
+      at ReadStream.onkeypress (readline.js:265:10)
+      at ReadStream.emit (events.js:400:28)
+      at emitKeys (internal/readline/utils.js:358:14)
+      at emitKeys.next (<anonymous>)
+      at ReadStream.onData (readline.js:1270:36)
+      at ReadStream.emit (events.js:400:28)
+      at addChunk (internal/streams/readable.js:293:12)
 
 npm manifest: 
-  
+  {
+    "name": "@kungfu-trader/action-travelsal-package",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "repository": "https://github.com/kungfu-trader/action-traversal-packages",
+    "author": "Kungfu Trader",
+    "license": "Apache-2.0"
+  }
 
 yarn manifest: 
   No manifest
