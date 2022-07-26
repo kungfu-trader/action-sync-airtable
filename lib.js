@@ -1,15 +1,15 @@
 /* eslint-disable no-restricted-globals */
 const github = require('@actions/github');
-const differenceInMilliseconds = require('date-fns/differenceInMilliseconds');
-const fs = require('fs');
-const path = require('path');
+const differenceInMilliseconds = require('date-fns/differenceInMilliseconds'); //看起来是时间
+const fs = require('fs'); //filesystem文件系统
+const path = require('path'); //这个路径是啥，看起来是被引入的
 const { Octokit } = require('@octokit/core');
-const { restEndpointMethods } = require('@octokit/plugin-rest-endpoint-methods');
-const parseDuration = require('parse-duration');
+const { restEndpointMethods } = require('@octokit/plugin-rest-endpoint-methods'); //rest终端方法是啥
+const parseDuration = require('parse-duration'); //似乎是用于将时间进行格式化/格式转化
 
-const purgeOpts = { dry: false };
+const purgeOpts = { dry: false }; //这个要改，这里的dry是啥
 
-function shouldDelete(artifact, expireIn, onlyPrefix, exceptPrefix) {
+function shouldDelete(artifact, expireIn, onlyPrefix, exceptPrefix) { //看起来是查找需要被删除的
   const expireInMs = parseDuration(expireIn);
   const included = onlyPrefix === '' || artifact.name.startsWith(onlyPrefix);
   const excluded = exceptPrefix && artifact.name.startsWith(exceptPrefix);
