@@ -6,136 +6,19 @@
 
 /* eslint-disable no-restricted-globals */
 const github = __nccwpck_require__(5438);
-const differenceInMilliseconds = __nccwpck_require__(2288); //看起来是时间
 const fs = __nccwpck_require__(7147); //filesystem文件系统
 const path = __nccwpck_require__(1017); //这个路径是啥，看起来是被引入的
 const { Octokit } = __nccwpck_require__(6762); //Extendable client for GitHub's REST & GraphQL APIs
 const {
   restEndpointMethods,
-} = __nccwpck_require__(3044); //rest终端方法是啥
+} = __nccwpck_require__(3044); //rest终端方法
 const { count } = __nccwpck_require__(6206);
 //graphQL是否需要被引入
-//const parseDuration = require('parse-duration'); //似乎是用于将时间进行格式化/格式转化
 
-const purgeOpts = { dry: false }; //这个要改，这里的dry是啥
-
-function shouldDelete(artifact, expireIn, onlyPrefix, exceptPrefix) {
-  //看起来是查找需要被删除的
-  //const expireInMs = parseDuration(expireIn);
-  const included = onlyPrefix === "" || artifact.name.startsWith(onlyPrefix);
-  const excluded = exceptPrefix && artifact.name.startsWith(exceptPrefix);
-  //const expired = differenceInMilliseconds(new Date(), new Date(artifact.created_at)) >= expireInMs;
-
-  return included && !excluded && expired;
-}
-
-async function* eachArtifact(octokit, owner, repo) {
-  //循环遍历获取所有版本，这个好
-  let hasNextPage = false; //let是可变变量,是否有下一页，用以判断是否要继续循环
-  let currentPage = 1; //当前页数，这里初始化为第一页（对应到graphQL就是first，从前面算起的第一页）
-  const maxPerPage = 100; //const是常量，每页最大值，这里定义为100，默认为30
-  do {
-    const response = await octokit.rest.actions.listArtifactsForRepo({
-      owner: owner,
-      repo: repo,
-      page: currentPage,
-      per_page: maxPerPage,
-    });
-    hasNextPage = response.data.total_count / maxPerPage > currentPage;
-    for (const artifact of response.data.artifacts) {
-      yield artifact;
-    }
-    currentPage++;
-  } while (hasNextPage);
-}
-
-/*
-  We need to create our own github client because @actions/core still uses
-  old version of @octokit/plugin-rest-endpoint-methods which doesn't have
-  `.listArtifactsForRepo`. This won't be needed when @actions/core gets updated
-  This ---------------> https://github.com/actions/toolkit/blob/master/packages/github/package.json#L42
-                        https://github.com/octokit/rest.js/blob/master/package.json#L38
-  Needs to use this  -> https://github.com/octokit/plugin-rest-endpoint-methods.js/pull/45
-*/
-//这里的局限是因为GitHub的action中core仍在使用旧版本导致某些功能无法支持。
-//但是看着上面已经应用了这个函数listArtifactsForRepo，看来是后来又有更新。
 const getOctokit = (token) => {
   const _Octokit = Octokit.plugin(restEndpointMethods);
   return new _Octokit({ auth: token });
-}; //这里是用于身份验证的东西（不过似乎只加了rest终端方法？是否对graphQL支持？）
-
-exports.setOpts = function (argv) {
-  purgeOpts.dry = argv.dry;
-};
-
-//exports.purgeArtifacts = async function (token, owner, expireIn, onlyPrefix, exceptPrefix) {
-exports.purgeArtifacts = async function (
-  token,
-  owner,
-  expireIn,
-  onlyPrefix,
-  exceptPrefix
-) {
-  const octokit = getOctokit(token);
-  //const deletedArtifacts = []; //graphQL的repository-packages下有个参数可以输出所有的包名，当然筛选last:1就是最新的那个
-  //这里有个问题，不是所有的repo都只生成一个package，所以last:n才比较合适，那么这个n如何确定？
-  const storePackageAndRepo = []; //这里存储所有的package及对应的repo名称（暂时的构想是使用rest方法来获取该package的所有版本）
-  const packagesQuery = await octokit.graphql(`
-      query {
-        organization(login: "${owner}") {
-          packages(first: 100) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            nodes {
-              repository {
-                name
-              }
-              name
-      }
-        }
-      }`); //这个是查询组织下所有package名及repo名
-  for (const repository of repositoriesQuery.organization.repositories.nodes) {
-    //只要查询结果非空循环嵌套下方操作
-    const repoDiskUsageKB = repository.diskUsage;
-    const repoDiskUsageMB = repository.diskUsage / 2 ** 10;
-    const repoDiskUsageGB = repository.diskUsage / 2 ** 20;
-    const unit = repoDiskUsageGB > 1 ? "GB" : repoDiskUsageMB > 1 ? "MB" : "KB";
-    const repoDiskUsage =
-      repoDiskUsageGB > 1
-        ? repoDiskUsageGB
-        : repoDiskUsageMB > 1
-        ? repoDiskUsageMB
-        : repoDiskUsageKB;
-    console.log(
-      `> purging for repository ${repository.name} (${repoDiskUsage.toFixed(
-        0
-      )} ${unit})`
-    );
-
-    for await (const artifact of eachArtifact(
-      octokit,
-      owner,
-      repository.name
-    )) {
-      console.log(`Checking artifact: ${artifact.name}`);
-      if (shouldDelete(artifact, expireIn, onlyPrefix, exceptPrefix)) {
-        console.log(`Deleting artifact:\n${JSON.stringify(artifact, null, 2)}`);
-        if (!purgeOpts.dry) {
-          await octokit.rest.actions.deleteArtifact({
-            owner: owner,
-            repo: repository.name,
-            artifact_id: artifact.id,
-          });
-          deletedArtifacts.push(artifact);
-          console.log(`Deleted artifact:  ${artifact.name}`);
-        }
-      }
-    }
-  }
-  return deletedArtifacts;
-};
+}; //octokit
 
 async function* traversalPackagesRest(octokit) {
   //循环遍历获取所有package的rest方法
@@ -226,10 +109,10 @@ async function* traversalVersionsGraphQL(
     const graphResponse = octokit.graphql(`
       query{
         repository(name: "${repository_name}", owner: "kungfu-trader") {
-          packages(names: "${package_name}", last: 1, after: "${startCursor}") {
+          packages(names: "${package_name}", last: 1) {
             totalCount
             nodes {
-              versions(first: "${maxPerPage}") {
+              versions(first: "${maxPerPage}", after: "${startCursor}" {
                 nodes {
                   version
                 }
@@ -262,6 +145,7 @@ exports.traversalMessage = async function (octokit) {
     const package_name = graphPackage.name;
     const repository_name = graphPackage.repository.name; //如果通过下方判别函数则这俩参数用于后续查询versions
     if (graphPackage.latestVersion === null) {
+      console.log(`跳过package: ${package_name}`);
       continue;
     }
     for await (const graphVersion of traversalVersionsGraphQL(
@@ -279,12 +163,42 @@ exports.traversalMessage = async function (octokit) {
       countNode++;
     }
   }
+  //console.log(JSON.stringify(traversalResult)); //用于控制台输出最终结果
+  exports.sendMessageToAirtable(traversalResult);
 };
 
 //关于查询到的结果如何存储也是一门学问
 //暂时选择的是存储键值对（构成json{version,package,repository}）,然后把它存入数组中
 //这里还有个问题是信息重复（冗余），比如repository和package信息被重复很多次
 //json有没有信息/空间上限？如果没有，考虑将其使用assign方法连接？（似乎也不需要，每个package一个数组，一个version一个push）
+//接下来考虑如何将已经查询并保存在traversalResult中的json数据发送到airtable或者zapier中？
+const request = __nccwpck_require__(8418);
+
+exports.sendMessageToAirtable = async function (traversalResult) {
+  const messageToAirtable = JSON.stringify(traversalResult);
+  const options = {
+    method: "POST",
+    url: "https://api.airtable.com/v0/appd2XwFJcQWZM8fw/Table%201",
+    headers: {
+      Authorization: "Bearer keyV2K62gr8l53KRn",
+      "Content-Type": "application/json",
+      Cookie: "brw=brwjmHKMyO4TjVGoS",
+    },
+    body: JSON.stringify({
+      records: [
+        {
+          fields: {
+            store: `${messageToAirtable}\n`,
+          },
+        },
+      ],
+    }),
+  };
+  request(options, function (error, response) {
+    if (error) throw new Error(error);
+    console.log(response.body);
+  });
+};
 
 
 /***/ }),
@@ -4785,145 +4699,6 @@ function removeHook(state, name, method) {
 
 /***/ }),
 
-/***/ 2063:
-/***/ ((module, exports) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports["default"] = requiredArgs;
-
-function requiredArgs(required, args) {
-  if (args.length < required) {
-    throw new TypeError(required + ' argument' + (required > 1 ? 's' : '') + ' required, but only ' + args.length + ' present');
-  }
-}
-
-module.exports = exports.default;
-
-/***/ }),
-
-/***/ 2288:
-/***/ ((module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports["default"] = differenceInMilliseconds;
-
-var _index = _interopRequireDefault(__nccwpck_require__(6477));
-
-var _index2 = _interopRequireDefault(__nccwpck_require__(2063));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-/**
- * @name differenceInMilliseconds
- * @category Millisecond Helpers
- * @summary Get the number of milliseconds between the given dates.
- *
- * @description
- * Get the number of milliseconds between the given dates.
- *
- * @param {Date|Number} dateLeft - the later date
- * @param {Date|Number} dateRight - the earlier date
- * @returns {Number} the number of milliseconds
- * @throws {TypeError} 2 arguments required
- *
- * @example
- * // How many milliseconds are between
- * // 2 July 2014 12:30:20.600 and 2 July 2014 12:30:21.700?
- * const result = differenceInMilliseconds(
- *   new Date(2014, 6, 2, 12, 30, 21, 700),
- *   new Date(2014, 6, 2, 12, 30, 20, 600)
- * )
- * //=> 1100
- */
-function differenceInMilliseconds(dateLeft, dateRight) {
-  (0, _index2.default)(2, arguments);
-  return (0, _index.default)(dateLeft).getTime() - (0, _index.default)(dateRight).getTime();
-}
-
-module.exports = exports.default;
-
-/***/ }),
-
-/***/ 6477:
-/***/ ((module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports["default"] = toDate;
-
-var _index = _interopRequireDefault(__nccwpck_require__(2063));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-/**
- * @name toDate
- * @category Common Helpers
- * @summary Convert the given argument to an instance of Date.
- *
- * @description
- * Convert the given argument to an instance of Date.
- *
- * If the argument is an instance of Date, the function returns its clone.
- *
- * If the argument is a number, it is treated as a timestamp.
- *
- * If the argument is none of the above, the function returns Invalid Date.
- *
- * **Note**: *all* Date arguments passed to any *date-fns* function is processed by `toDate`.
- *
- * @param {Date|Number} argument - the value to convert
- * @returns {Date} the parsed date in the local time zone
- * @throws {TypeError} 1 argument required
- *
- * @example
- * // Clone the date:
- * const result = toDate(new Date(2014, 1, 11, 11, 30, 30))
- * //=> Tue Feb 11 2014 11:30:30
- *
- * @example
- * // Convert the timestamp to date:
- * const result = toDate(1392098430000)
- * //=> Tue Feb 11 2014 11:30:30
- */
-function toDate(argument) {
-  (0, _index.default)(1, arguments);
-  var argStr = Object.prototype.toString.call(argument); // Clone the date
-
-  if (argument instanceof Date || typeof argument === 'object' && argStr === '[object Date]') {
-    // Prevent the date to lose the milliseconds when passed to new Date() in IE10
-    return new Date(argument.getTime());
-  } else if (typeof argument === 'number' || argStr === '[object Number]') {
-    return new Date(argument);
-  } else {
-    if ((typeof argument === 'string' || argStr === '[object String]') && typeof console !== 'undefined') {
-      // eslint-disable-next-line no-console
-      console.warn("Starting with v2.0.0-beta.1 date-fns doesn't accept strings as date arguments. Please use `parseISO` to parse strings. See: https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#string-arguments"); // eslint-disable-next-line no-console
-
-      console.warn(new Error().stack);
-    }
-
-    return new Date(NaN);
-  }
-}
-
-module.exports = exports.default;
-
-/***/ }),
-
 /***/ 8932:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -9264,6 +9039,14 @@ function wrappy (fn, cb) {
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 8418:
+/***/ ((module) => {
+
+module.exports = eval("require")("request");
 
 
 /***/ }),

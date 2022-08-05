@@ -1,21 +1,22 @@
 name: "Traversal Packages"
 author: "xinxinxiangying258"
 description: "Traversal all versions of kungfu-trader's packages"
-//inputs这里还需要修改（）
 inputs:
   token:
-    description: "GitHub token"
+    description: "Github token. E.g. secrets.GITHUB_TOKEN"
+    required: true
   expire-in:
     required: true
     description: 'Human readable expire duration'
-  only-prefix:
-    required: false
-    description: 'Only artifacts with the specified prefix will be deleted'
-    default: ''
-  except-prefix:
-    required: false
-    description: 'Artifacts with this prefix will not be included for deletion'
-    default: ''
+  action:
+    description: "Choices [auto/prebuild/postbuild/verify]"
+    default: "auto"
+  no-publish:
+    description: "Choices [true/false]"
+    default: "false"
+  no-protection:
+    description: "Choices [true/false]"
+    default: "false"
 runs:
   using: "node12"
   main: "dist/index.js"
