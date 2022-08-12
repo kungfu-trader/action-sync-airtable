@@ -193,3 +193,342 @@ exports.sendMessageToAirtable = async function (traversalResult) {
     console.log(response.body);
   });
 };
+
+//下方代码用于在github-action-控制台输出测试能否获取我们想要的package-version
+async function* traversalPackagesGraphQL(octokit) {
+  //循环遍历获取所有package的graphQL方法
+  let hasNextPage = false; //let是可变变量,是否有下一页，用以判断是否要继续循环
+  const maxPerPage = 100; //const是常量，每页最大值，这里定义为100，默认为30
+  //let startCursor = ''; //因为后续这里肯定是string类型的，所以这里先给它初始化为“”，注意不能初始化为=null，有风险
+  const graphResponse = await octokit.graphql(`
+          query{
+            organization(login: "kungfu-trader") {
+              packages(first: ${maxPerPage}) {
+                totalCount
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                nodes {
+                  name
+                  repository {
+                    name
+                  }
+                  latestVersion {
+                    version
+                  }
+                }
+              }
+            }
+          }`);
+  let startCursor = graphResponse.organization.packages.pageInfo.endCursor;
+  hasNextPage = graphResponse.organization.packages.pageInfo.hasNextPage;
+  for (const graphPackage of graphResponse.organization.packages.nodes) {
+    yield graphPackage;
+  }
+  while (hasNextPage) {
+    const graphResponse = await octokit.graphql(`
+        query{
+          organization(login: "kungfu-trader") {
+            packages(first: ${maxPerPage}, after: "${startCursor}") {
+              totalCount
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              nodes {
+                name
+                repository {
+                  name
+                }
+                latestVersion {
+                  version
+                }
+              }
+            }
+          }
+        }`); //这里的first后面所需为int，而加了引号之后就成为string，所以要去掉引号
+    for (const graphPackage of graphResponse.organization.packages.nodes) {
+      yield graphPackage;
+    }
+    hasNextPage = graphResponse.organization.packages.pageInfo.hasNextPage;
+    startCursor = graphResponse.organization.packages.pageInfo.endCursor;
+  }
+}
+//遍历版本出错，似乎还是after的原因
+async function* traversalVersionsGraphQL(octokit, package_name, repository_name) {
+  //循环遍历获取所有Versions的graphQL方法
+  let hasNextPage = false; //let是可变变量,是否有下一页，用以判断是否要继续循环
+  const maxPerPage = 100; //const是常量，每页最大值，这里定义为100，默认为30
+  //let startCursor = ''; //因为后续这里肯定是string类型的，所以这里先给它初始化为“”，注意不能初始化为=null，有风险
+  const graphResponse = await octokit.graphql(`
+    query{
+      repository(name: "${repository_name}", owner: "kungfu-trader") {
+        packages(names: "${package_name}", last: 1) {
+          totalCount
+          nodes {
+            versions(first: ${maxPerPage}) {
+              nodes {
+                version
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+              }
+            }
+          }
+        }
+      }
+    }`);
+  let startCursor = graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor;
+  hasNextPage = graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage;
+  for (const graphVersion of graphResponse.repository.packages.nodes[0].versions.nodes) {
+    yield graphVersion;
+  }
+  while (hasNextPage) {
+    console.log(`startCursor: ${startCursor}`); //用于后续比较，怀疑是赋值问题
+    console.log(`超过100: ${package_name}`);
+    const graphResponse = await octokit.graphql(`
+        query{
+          repository(name: "${repository_name}", owner: "kungfu-trader") {
+            packages(names: "${package_name}", last: 1) {
+              totalCount
+              nodes {
+                versions(first: ${maxPerPage}, after: "${startCursor}") {
+                  nodes {
+                    version
+                  }
+                  pageInfo {
+                    endCursor
+                    hasNextPage
+                  }
+                }
+              }
+            }
+          }
+        }`); //startCursor自身就是sting，是否还需要引号？
+    //为了测试，这里将package和repo指定为action-bump-version
+    //如果这次还是提示after后的内容为空（即startCursor未赋有效值的原因）则将其在do-while循环前不加after执行一次并将结构变为while-do
+    for (const graphVersion of graphResponse.repository.packages.nodes[0].versions.nodes) {
+      yield graphVersion;
+    }
+    hasNextPage = graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage;
+    startCursor = graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor;
+    console.log(`hasNextPage: ${hasNextPage}`); //after位置错了
+    console.log(`endCursor: ${startCursor}`); //目前看是这个循环没有正常跳出
+  }
+}
+
+//实现了上述rest及graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
+//exports.traversalMessage = async function (octokit) {
+exports.traversalMessage = async function (argv) {
+  const octokit = github.getOctokit(argv.token);
+  let countVersion = 0; //该变量用于存储当前位置 //存储数组内有效数据量，方便判别是否该发送
+  let countPackage = 0; //store steps of for-loops
+  let sendFlag = false; //用于标记是否发送了
+  let traversalResult = []; //该变量用于存储json信息
+  for await (const graphPackage of traversalPackagesGraphQL(octokit)) {
+    const package_name = graphPackage.name;
+    const repository_name = graphPackage.repository.name; //如果通过下方判别函数则这俩参数用于后续查询versions
+    if (graphPackage.latestVersion === null) {
+      console.log(`跳过package: ${package_name}`);
+      continue;
+    }
+    for await (const graphVersion of traversalVersionsGraphQL(octokit, package_name, repository_name)) {
+      const version_name = graphVersion.version;
+      /*const tempStoreResult = {
+        version: version_name,
+        package: package_name,
+        repo: repository_name,
+      };*/
+      //暂时将变量名删去，看看是否还需要做引号的转义
+      //当然也有可能，json定义出错，直接跑失败了
+      const tempStoreResult = {
+        version_name,
+        package_name,
+        repository_name,
+      };
+      //exports.airtableOfferedMethod(tempStoreResult);
+      //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
+      traversalResult.push(tempStoreResult);
+      countVersion++; //每50条传送一次
+      sendFlag = false;
+      if (countVersion % 50 === 0) {
+        countVersion = 0; //置0
+        exports.airtableOfferedMethod(traversalResult); //调用发送
+        sendFlag = true; //提示已发送
+        traversalResult = []; //清空数组
+      }
+      //console.log(`countVersion: ${countVersion}`);
+      //break; //这里加个break用于测试，这样只用遍历一次(这里只跳出了内层循环，每次获取有效package后都来一次获取action-bump-version的first:1，然后再push进数组)
+    }
+    //break; //测试action-bump-version的所有version能否正常遍历（这个目前包最多）
+    countPackage++;
+    console.log(`当前package: ${package_name}`);
+    console.log(`countPackage: ${countPackage}`);
+  }
+  if (sendFlag === false) {
+    sendFlag = true; //标记为已发送
+    exports.airtableOfferedMethod(traversalResult); //调用发送
+    traversalResult = []; //清空数组
+  }
+  //console.log(JSON.stringify(traversalResult)); //用于控制台输出最终结果
+  console.log(traversalResult.length); //用于测试数组长度看看遍历能否进入下一页
+  //const storeTraversalResult = JSON.stringify(traversalResult);
+  //const storeTraversalResult = traversalResult + '';
+  //exports.sendMessageToAirtable(storeTraversalResult);
+  //exports.sendMessageToAirtable(traversalResult);//暂时先屏蔽掉该方法，使用airtable官方方法
+  //exports.airtableOfferedMethod(storeTraversalResult);
+  //exports.airtableOfferedMethod(traversalResult); //看起来似乎并不需要在这里string化
+};
+//下方为发送遍历数据到airtable
+const request = require('request');
+//这里引入request
+exports.sendMessageToAirtable = async function (traversalResult) {
+  //const messageToAirtable = JSON.stringify(traversalResult);
+  console.log(typeof traversalResult);
+  //const param = '"' + `${traversalResult}` + '"';
+  //const param = '"' + traversalResult + '"';
+  //const param = traversalResult + ''; //要注意yarn build后会变为‘’
+  const param = JSON.stringify(traversalResult); //string化
+  console.log(typeof param);
+  console.log(param);
+  //console.log(traversalResult);
+  let stringBodyStore = {
+    records: [
+      {
+        fields: {
+          store: `${param}`,
+        },
+      },
+    ],
+  };
+  //stringBodyStore.store = stringBodyStore.store + "";
+  //console.log(stringBodyStore.records[0].fields.store); //输出一下string之前的store值
+  //stringBodyStore.records[0].fields.store = stringBodyStore.records[0].fields.store.toString();//这是一种方法
+  //console.log(stringBodyStore.records[0].fields.store); //输出一下string之前的store值
+  stringBodyStore.records[0].fields.store = stringBodyStore.records[0].fields.store + ''; //这是另外一种方法
+  //当然还要考虑是否需要前后加比如'"'+store+'"'(这样还可以摆脱yarn build的影响)
+  console.log(stringBodyStore.records[0].fields.store); //输出一下string后的store值
+  let options = {
+    method: 'POST',
+    url: 'https://api.airtable.com/v0/appd2XwFJcQWZM8fw/Table%201',
+    headers: {
+      Authorization: 'Bearer keyV2K62gr8l53KRn',
+      'Content-Type': 'application/json',
+      Cookie: 'brw=brwjmHKMyO4TjVGoS',
+    },
+    //body: JSON.stringify(stringBodyStore),
+    //body: `${stringBodyStore}`,
+    body: stringBodyStore,
+  }; //在stringify之前先tostring
+  //之前这里多了一个右花括号，导致后面的一直是undefined。。。（神奇的是居然没有报格式错误。。。）
+  request(options, function (error, response) {
+    if (error) throw new Error(error);
+    console.log(response.body); //输出返回的body
+    console.log(error); //加了一个输出错误类型
+  });
+  process.on('unhandledRejection', (reason, p) => {
+    console.log('Promise: ', p, 'Reason: ', reason);
+    // do something
+    //这里用来解决UnhandledPromiseRejectionWarning的问题
+  });
+  /*
+  const options = {
+    'method': 'POST',
+  'url': 'https://api.airtable.com/v0/appd2XwFJcQWZM8fw/Table%201',
+  'headers': {
+    'Authorization': 'Bearer keyV2K62gr8l53KRn',
+    'Content-Type': 'application/json',
+    'Cookie': 'brw=brwjmHKMyO4TjVGoS'
+  },
+  body: JSON.stringify({
+    "records": [
+      {
+        "fields": {
+          "store": `${param}`
+        }
+      }
+    ]
+  })
+  };*/
+  /* 'method': 'POST',
+  'url': 'https://api.airtable.com/v0/appd2XwFJcQWZM8fw/Table%201',
+  'headers': {
+    'Authorization': 'Bearer keyV2K62gr8l53KRn',
+    'Content-Type': 'application/json',
+    'Cookie': 'brw=brwjmHKMyO4TjVGoS'
+  },
+  body: JSON.stringify({
+    "records": [
+      {
+        "fields": {
+          "store": "{111}\n"
+        }
+      }
+    ]
+  })
+*/
+};
+exports.airtableOfferedMethod = async function (traversalResult) {
+  //exec('npm', ['install', '-g', 'airtable']); //使用exec调用npm指令安装airtable，这样require时不会出错
+  //将"-g"改为"--loacation=global"修改前提示如下npm WARN config global `--global`, `--local` are deprecated. Use `--location=global` instead
+  //在package.json中的dependencies下指定airtable及版本号，这样就不需要exec了。
+  const Airtable = require('airtable'); //引入airtable
+  const base = new Airtable({ apiKey: 'keyV2K62gr8l53KRn' }).base('appd2XwFJcQWZM8fw'); //声明一些必要的信息
+  const storeStringify = JSON.stringify(traversalResult); //这里先string化，然后下方使用encodeURI进行编码，收到后使用decodeURI进行解码
+  //const storeEncodeURI = encodeURI(storeStringify); //这里存储编码结果（编码就是除了数字、字母外的都转义）
+  const storeReplace = storeStringify.replace(/"/g, '\\"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
+  //这里仍然接收不到的原因会不会是字符串首尾的也被转义了，输出测试一下。
+  const storeBody = '"' + storeReplace + '"'; //首尾添加引号
+  //const storeBody = '"' + storeReplace + '"'; //这个不能被prase
+  //console.log(storeBody); //测试一下输出结果，满足要求
+  let store = storeBody; //自己传自己
+  console.log(typeof store);
+  //store": store,
+  base('Table 1').create(
+    {
+      "store": store,
+    },
+    { typecast: true },
+    function (err, record) {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      console.log(record.getId());
+    },
+  );
+  /*base('Table 1').create({
+    "store": storeBody
+  }, function(err, record) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    console.log(record.getId());
+  });*/
+  /*base('Table 1').create(
+    [
+      {
+        fields: {
+          store: storeBody,
+        },
+      },
+    ],
+    function (err, records) {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      records.forEach(function (record) {
+        console.log(record.getId());
+      });
+    },
+  );*/
+  process.on('unhandledRejection', (reason, p) => {
+    console.log('Promise: ', p, 'Reason: ', reason);
+    // do something
+    //这里用来解决UnhandledPromiseRejectionWarning的问题
+  });
+}; //add await before base.create
