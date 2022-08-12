@@ -256,7 +256,11 @@ async function* traversalPackagesGraphQL(octokit) {
   }
 }
 //遍历版本出错，似乎还是after的原因
-async function* traversalVersionsGraphQL(octokit, package_name, repository_name) {
+async function* traversalVersionsGraphQL(
+  octokit,
+  package_name,
+  repository_name
+) {
   //循环遍历获取所有Versions的graphQL方法
   let hasNextPage = false; //let是可变变量,是否有下一页，用以判断是否要继续循环
   const maxPerPage = 100; //const是常量，每页最大值，这里定义为100，默认为30
@@ -280,9 +284,12 @@ async function* traversalVersionsGraphQL(octokit, package_name, repository_name)
         }
       }
     }`);
-  let startCursor = graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor;
-  hasNextPage = graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage;
-  for (const graphVersion of graphResponse.repository.packages.nodes[0].versions.nodes) {
+  let startCursor =
+    graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor;
+  hasNextPage =
+    graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage;
+  for (const graphVersion of graphResponse.repository.packages.nodes[0].versions
+    .nodes) {
     yield graphVersion;
   }
   while (hasNextPage) {
@@ -309,11 +316,14 @@ async function* traversalVersionsGraphQL(octokit, package_name, repository_name)
         }`); //startCursor自身就是sting，是否还需要引号？
     //为了测试，这里将package和repo指定为action-bump-version
     //如果这次还是提示after后的内容为空（即startCursor未赋有效值的原因）则将其在do-while循环前不加after执行一次并将结构变为while-do
-    for (const graphVersion of graphResponse.repository.packages.nodes[0].versions.nodes) {
+    for (const graphVersion of graphResponse.repository.packages.nodes[0]
+      .versions.nodes) {
       yield graphVersion;
     }
-    hasNextPage = graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage;
-    startCursor = graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor;
+    hasNextPage =
+      graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage;
+    startCursor =
+      graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor;
     console.log(`hasNextPage: ${hasNextPage}`); //after位置错了
     console.log(`endCursor: ${startCursor}`); //目前看是这个循环没有正常跳出
   }
@@ -334,7 +344,11 @@ exports.traversalMessage = async function (argv) {
       console.log(`跳过package: ${package_name}`);
       continue;
     }
-    for await (const graphVersion of traversalVersionsGraphQL(octokit, package_name, repository_name)) {
+    for await (const graphVersion of traversalVersionsGraphQL(
+      octokit,
+      package_name,
+      repository_name
+    )) {
       const version_name = graphVersion.version;
       /*const tempStoreResult = {
         version: version_name,
@@ -382,7 +396,7 @@ exports.traversalMessage = async function (argv) {
   //exports.airtableOfferedMethod(traversalResult); //看起来似乎并不需要在这里string化
 };
 //下方为发送遍历数据到airtable
-const request = require('request');
+const request = require("request");
 //这里引入request
 exports.sendMessageToAirtable = async function (traversalResult) {
   //const messageToAirtable = JSON.stringify(traversalResult);
@@ -407,16 +421,17 @@ exports.sendMessageToAirtable = async function (traversalResult) {
   //console.log(stringBodyStore.records[0].fields.store); //输出一下string之前的store值
   //stringBodyStore.records[0].fields.store = stringBodyStore.records[0].fields.store.toString();//这是一种方法
   //console.log(stringBodyStore.records[0].fields.store); //输出一下string之前的store值
-  stringBodyStore.records[0].fields.store = stringBodyStore.records[0].fields.store + ''; //这是另外一种方法
+  stringBodyStore.records[0].fields.store =
+    stringBodyStore.records[0].fields.store + ""; //这是另外一种方法
   //当然还要考虑是否需要前后加比如'"'+store+'"'(这样还可以摆脱yarn build的影响)
   console.log(stringBodyStore.records[0].fields.store); //输出一下string后的store值
   let options = {
-    method: 'POST',
-    url: 'https://api.airtable.com/v0/appd2XwFJcQWZM8fw/Table%201',
+    method: "POST",
+    url: "https://api.airtable.com/v0/appd2XwFJcQWZM8fw/Table%201",
     headers: {
-      Authorization: 'Bearer keyV2K62gr8l53KRn',
-      'Content-Type': 'application/json',
-      Cookie: 'brw=brwjmHKMyO4TjVGoS',
+      Authorization: "Bearer keyV2K62gr8l53KRn",
+      "Content-Type": "application/json",
+      Cookie: "brw=brwjmHKMyO4TjVGoS",
     },
     //body: JSON.stringify(stringBodyStore),
     //body: `${stringBodyStore}`,
@@ -428,8 +443,8 @@ exports.sendMessageToAirtable = async function (traversalResult) {
     console.log(response.body); //输出返回的body
     console.log(error); //加了一个输出错误类型
   });
-  process.on('unhandledRejection', (reason, p) => {
-    console.log('Promise: ', p, 'Reason: ', reason);
+  process.on("unhandledRejection", (reason, p) => {
+    console.log("Promise: ", p, "Reason: ", reason);
     // do something
     //这里用来解决UnhandledPromiseRejectionWarning的问题
   });
@@ -474,8 +489,10 @@ exports.airtableOfferedMethod = async function (traversalResult) {
   //exec('npm', ['install', '-g', 'airtable']); //使用exec调用npm指令安装airtable，这样require时不会出错
   //将"-g"改为"--loacation=global"修改前提示如下npm WARN config global `--global`, `--local` are deprecated. Use `--location=global` instead
   //在package.json中的dependencies下指定airtable及版本号，这样就不需要exec了。
-  const Airtable = require('airtable'); //引入airtable
-  const base = new Airtable({ apiKey: 'keyV2K62gr8l53KRn' }).base('appd2XwFJcQWZM8fw'); //声明一些必要的信息
+  const Airtable = require("airtable"); //引入airtable
+  const base = new Airtable({ apiKey: "keyV2K62gr8l53KRn" }).base(
+    "appd2XwFJcQWZM8fw"
+  ); //声明一些必要的信息
   const storeStringify = JSON.stringify(traversalResult); //这里先string化，然后下方使用encodeURI进行编码，收到后使用decodeURI进行解码
   //const storeEncodeURI = encodeURI(storeStringify); //这里存储编码结果（编码就是除了数字、字母外的都转义）
   const storeReplace = storeStringify.replace(/"/g, '\\"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
@@ -486,9 +503,9 @@ exports.airtableOfferedMethod = async function (traversalResult) {
   let store = storeBody; //自己传自己
   console.log(typeof store);
   //store": store,
-  base('Table 1').create(
+  base("Table 1").create(
     {
-      "store": store,
+      store: store,
     },
     { typecast: true },
     function (err, record) {
@@ -497,7 +514,7 @@ exports.airtableOfferedMethod = async function (traversalResult) {
         return;
       }
       console.log(record.getId());
-    },
+    }
   );
   /*base('Table 1').create({
     "store": storeBody
@@ -526,8 +543,8 @@ exports.airtableOfferedMethod = async function (traversalResult) {
       });
     },
   );*/
-  process.on('unhandledRejection', (reason, p) => {
-    console.log('Promise: ', p, 'Reason: ', reason);
+  process.on("unhandledRejection", (reason, p) => {
+    console.log("Promise: ", p, "Reason: ", reason);
     // do something
     //这里用来解决UnhandledPromiseRejectionWarning的问题
   });
