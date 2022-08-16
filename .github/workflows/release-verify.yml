@@ -7,6 +7,7 @@ on:
       - release/*/*
       - main
 
+
 jobs:
   try:
     uses: kungfu-trader/workflows/.github/workflows/.release-verify.yml@v1
