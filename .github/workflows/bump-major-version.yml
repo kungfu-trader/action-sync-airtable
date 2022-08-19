@@ -9,7 +9,7 @@ on:
 
 jobs:
   bump:
-    uses: kungfu-trader/workflows/.github/workflows/.bump-major-version.yml@v1.0-alpha
+    uses: kungfu-trader/workflows/.github/workflows/.bump-major-version.yml@v1
     secrets:
       GITHUB_PUSH_TOKEN: ${{ secrets.KUNGFU_GITHUB_TOKEN }}
 

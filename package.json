@@ -9,7 +9,9 @@
     "build": "yarn format && yarn dist",
     "dist": "ncc build index.js",
     "format": "prettier --write --parser typescript \"*.js\"",
-    "lint": "eslint --ext .js ."
+    "lint": "eslint --ext .js .",
+    "foreach": "wsrun --serial --exclude-missing --fast-exit",
+    "package": "yarn foreach package"
   },
   "dependencies": {
     "@actions/core": "^1.6.0",
@@ -26,7 +28,8 @@
     "@typescript-eslint/parser": "^5.12.0",
     "@vercel/ncc": "^0.33.3",
     "eslint": "^8.9.0",
-    "prettier": "^2.7.0",
-    "prettier-eslint-cli": "^5.0.0"
+    "prettier": "^2.3.0",
+    "prettier-eslint-cli": "^5.0.0",
+    "wsrun": "^5.2.0"
   }
 }
