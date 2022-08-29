@@ -230,7 +230,7 @@ async function* traversalPackagesGraphQL(octokit) {
     yield graphPackage;
   }
   while (hasNextPage) {
-     graphResponse = await octokit.graphql(`
+    graphResponse = await octokit.graphql(`
         query{
           organization(login: "kungfu-trader") {
             packages(first: ${maxPerPage}, after: "${startCursor}") {
@@ -384,7 +384,7 @@ exports.traversalMessage = async function (argv) {
       sendFlag = false;
       if (countVersion % 50 === 0) {
         countVersion = 0; //置0
-        exports.airtableOfferedMethod(traversalResult,argv); //调用发送
+        exports.airtableOfferedMethod(traversalResult, argv); //调用发送
         sendFlag = true; //提示已发送
         traversalResult = []; //清空数组
         countSend++; //发送次数加一
@@ -404,7 +404,7 @@ exports.traversalMessage = async function (argv) {
   }
   if (sendFlag === false) {
     sendFlag = true; //标记为已发送
-    exports.airtableOfferedMethod(traversalResult,argv); //调用发送
+    exports.airtableOfferedMethod(traversalResult, argv); //调用发送
     traversalResult = []; //清空数组
   }
   return backUpTraversalMessage; //用于返回return，这里的返回值到了index.js的调用参数 const traversalMessage中，最后用于输出setOutput
@@ -425,8 +425,8 @@ exports.traversalMessage = async function (argv) {
   let sendFlag = false; //用于标记是否发送了
   let traversalResult = []; //该变量用于每次发送前存储json信息
   let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
-  let traversalRefs = [];//该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
-  let traversalVersions = [];//该变量用于存储当前package的所有versions
+  let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
+  let traversalVersions = []; //该变量用于存储当前package的所有versions
   for await (const graphPackage of traversalPackagesGraphQL(octokit)) {
     const package_name = graphPackage.name;
     const repository_name = graphPackage.repository.name; //如果通过下方判别函数则这俩参数用于后续查询versions
@@ -434,17 +434,20 @@ exports.traversalMessage = async function (argv) {
       console.log(`跳过package: ${package_name}`);
       continue;
     } //package没有最新版本意味着被删除，所以跳过（之前想用提取前缀来判断的方法，但是不保证未来没有deleted开头的package，所以放弃）
-    for await (const graphPostFix of traversalRepoRefsGraphQL(octokit,repository_name)){
-        const refsPost = graphPostFix.name; //比如action-bump-version的“v2/v2.0”
-        const subStart = refsPost.lastIndexOf("v");//最后一个v所在的位置
-        if (subStart === -1){
-          console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
-          continue;
-        } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
-        const subEnd = refsPost.length;//提取字符串长度
-        const refsPostFix = refsPost.subString(subStart+1,subEnd);//提取子串
-        traversalRefs.push(refsPostFix);//存进数组
-    }//遍历repo所有分支并提取出大版本号存储起来
+    for await (const graphPostFix of traversalRepoRefsGraphQL(
+      octokit,
+      repository_name
+    )) {
+      const refsPost = graphPostFix.name; //比如action-bump-version的“v2/v2.0”
+      const subStart = refsPost.lastIndexOf("v"); //最后一个v所在的位置
+      if (subStart === -1) {
+        console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
+        continue;
+      } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
+      const subEnd = refsPost.length; //提取字符串长度
+      const refsPostFix = refsPost.subString(subStart + 1, subEnd); //提取子串
+      traversalRefs.push(refsPostFix); //存进数组
+    } //遍历repo所有分支并提取出大版本号存储起来
     for await (const graphVersion of traversalVersionsGraphQL(
       octokit,
       package_name,
@@ -452,9 +455,12 @@ exports.traversalMessage = async function (argv) {
     )) {
       const version_name = graphVersion.version;
       traversalVersions.push(version_name);
-    }//遍历package所有version并存储起来
-    const matchedVersions = comparePostFixAndVersions(traversalRefs,traversalVersions);
-    for (let version_name of matchedVersions){
+    } //遍历package所有version并存储起来
+    const matchedVersions = comparePostFixAndVersions(
+      traversalRefs,
+      traversalVersions
+    );
+    for (let version_name of matchedVersions) {
       /*const tempStoreResult = {
         version: version_name,
         package: package_name,
@@ -481,7 +487,7 @@ exports.traversalMessage = async function (argv) {
       sendFlag = false;
       if (countVersion % 50 === 0) {
         countVersion = 0; //置0
-        exports.airtableOfferedMethod(traversalResult,argv); //调用发送
+        exports.airtableOfferedMethod(traversalResult, argv); //调用发送
         sendFlag = true; //提示已发送
         traversalResult = []; //清空数组
         countSend++; //发送次数加一
@@ -501,7 +507,7 @@ exports.traversalMessage = async function (argv) {
   }
   if (sendFlag === false) {
     sendFlag = true; //标记为已发送
-    exports.airtableOfferedMethod(traversalResult,argv); //调用发送
+    exports.airtableOfferedMethod(traversalResult, argv); //调用发送
     traversalResult = []; //清空数组
   }
   return backUpTraversalMessage; //用于返回return，这里的返回值到了index.js的调用参数 const traversalMessage中，最后用于输出setOutput
@@ -542,7 +548,7 @@ exports.traversalMessage = async function (argv) {
         version: version_name,
         package: package_name,
         repo: repository_name,
-      };*//*
+      };*/ /*
       //暂时将变量名删去，看看是否还需要做引号的转义
       //当然也有可能，json定义出错，直接跑失败了
       const tempStoreResult = {
@@ -559,7 +565,7 @@ exports.traversalMessage = async function (argv) {
       cur_num += 1;
       if(cur_num % number == 0) {
         sleep(1000);
-      }*//*
+      }*/ /*
       countVersion++; //每50条传送一次
       sendFlag = false;
       if (countVersion % 50 === 0) {
@@ -689,7 +695,7 @@ exports.sendMessageToAirtable = async function (traversalResult) {
   })
 */
 };
-exports.airtableOfferedMethod = async function (traversalResult,argv) {
+exports.airtableOfferedMethod = async function (traversalResult, argv) {
   //exec('npm', ['install', '-g', 'airtable']); //使用exec调用npm指令安装airtable，这样require时不会出错
   //将"-g"改为"--loacation=global"修改前提示如下npm WARN config global `--global`, `--local` are deprecated. Use `--location=global` instead
   //在package.json中的dependencies下指定airtable及版本号，这样就不需要exec了。
@@ -769,10 +775,8 @@ exports.airtableOfferedMethod = async function (traversalResult,argv) {
   });
 }; //add await before base.create
 //下方为进一步深加工信息的功能组成（因为存在airtable的scripting性能瓶颈的可能性，所以在这里进行预处理,符合要求的再发送）
-async function* traversalRepoRefsGraphQL(
-  octokit,
-  repository_name
-) {//该函数提取来所有dev分支的后缀
+async function* traversalRepoRefsGraphQL(octokit, repository_name) {
+  //该函数提取来所有dev分支的后缀
   let hasNextPage = false; //let是可变变量,是否有下一页，用以判断是否要继续循环
   const maxPerPage = 100; //const是常量，每页最大值，这里定义为100，默认为30
   let graphRefs = await octokit.graphql(`
@@ -791,13 +795,13 @@ async function* traversalRepoRefsGraphQL(
         }
       }
     } 
-  `);//这里是遍历repo的所有分支，目的是为了获取后三位（比如v2/v2.1的2.1）用于和version进行前缀匹配
+  `); //这里是遍历repo的所有分支，目的是为了获取后三位（比如v2/v2.1的2.1）用于和version进行前缀匹配
   let endCursor = graphRefs.repository.refs.pageInfo.endCursor;
   hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
-  for( const graphPostFix of graphRefs.repository.refs.edeges[0].nodes){
-    yield graphPostFix
-  };
-  while(hasNextPage){
+  for (const graphPostFix of graphRefs.repository.refs.edeges[0].nodes) {
+    yield graphPostFix;
+  }
+  while (hasNextPage) {
     hasNextPage = false;
     graphRefs = await octokit.graphql(`
       query{
@@ -818,31 +822,31 @@ async function* traversalRepoRefsGraphQL(
     `);
     hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
     endCursor = graphRefs.repository.refs.pageInfo.endCursor;
-    for( const graphPostFix of graphRefs.repository.refs.edeges[0].nodes){
-      yield graphPostFix
-    };
+    for (const graphPostFix of graphRefs.repository.refs.edeges[0].nodes) {
+      yield graphPostFix;
+    }
   }
-}//遍历repo所有分支的后缀获取大版本号
+} //遍历repo所有分支的后缀获取大版本号
 //下方用于遍历后缀数组和version数组进行匹配，找到我们想要的版本后并返回
-async function* comparePostFixAndVersions (postFixArray, versionsArray){
+async function* comparePostFixAndVersions(postFixArray, versionsArray) {
   //const postFixArrayLength = postFixArray.length;//存储后缀数组长度
   //const versionsArrayLength = versionsArray.length;//存储版本数组长度
-  let matchedVersions = [];//存储匹配成功的versions
-  let tempStoreMatchedVersion = versionsArray[0];//临时存储匹配到的version，初始化为第一个元素
-  let matchedFlag = false;//是否匹配成功的标志，初始化为0
-  for (let varInPostFixArray of postFixArray){
-    const varLength = varInPostFixArray.length;//存储元素长度
-    for( let varInVersionArray of versionsArray){
-      const tempStoreSubString = varInVersionArray.subString(0,varLength);//提取version的前缀
-      if (varInPostFixArray === tempStoreSubString){
-        matchedFlag = true;//匹配成功
-        tempStoreMatchedVersion = varInVersionArray;//存储version全称
+  let matchedVersions = []; //存储匹配成功的versions
+  let tempStoreMatchedVersion = versionsArray[0]; //临时存储匹配到的version，初始化为第一个元素
+  let matchedFlag = false; //是否匹配成功的标志，初始化为0
+  for (let varInPostFixArray of postFixArray) {
+    const varLength = varInPostFixArray.length; //存储元素长度
+    for (let varInVersionArray of versionsArray) {
+      const tempStoreSubString = varInVersionArray.subString(0, varLength); //提取version的前缀
+      if (varInPostFixArray === tempStoreSubString) {
+        matchedFlag = true; //匹配成功
+        tempStoreMatchedVersion = varInVersionArray; //存储version全称
       }
     }
-    if(matchedFlag===true){
-      matchedVersions.push(tempStoreMatchedVersion);//将最终匹配到的存入数组中
-      matchedFlag = false;//置为false
-    }//每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
+    if (matchedFlag === true) {
+      matchedVersions.push(tempStoreMatchedVersion); //将最终匹配到的存入数组中
+      matchedFlag = false; //置为false
+    } //每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
   }
   return matchedVersions;
 }
