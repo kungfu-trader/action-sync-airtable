@@ -3,8 +3,8 @@ console.log("start sync messages to airtable"); //在控制台输出信息
 /* eslint-disable no-restricted-globals */
 const lib = (exports.lib = require("./lib.js")); //用了quickFix,一时也看不出来哪里改了。。。
 //const lib = (exports.lib = require("./lib.js"));//调用lib.js，这句不改
-import { getInput, setFailed } from "@actions/core"; //这个是quickFix后的定义
-//const core = require('@actions/core');这个是原先的定义
+//import { getInput, setFailed } from "@actions/core"; //这个是quickFix后的定义
+const core = require("@actions/core"); //这个是原先的定义
 //这个core是什么，看起来是actions下的（是的，这句就是引入，实际上这个包是官方提供的，具体功能包括Core functions for setting results, logging, registering secrets and exporting variables across actions）
 import { context } from "@actions/github"; //这个也是quickFix后的（会不会报错呢）
 //const github = require('@actions/github');//这个不改
@@ -13,8 +13,8 @@ import { context } from "@actions/github"; //这个也是quickFix后的（会不
 const main = async function () {
   const repo = context.repo; //看起来写注释时最好不要在大括号内？以免玄学错误
   const argv = {
-    token: getInput("token"),
-    owner: repo.owner,
+    token: core.getInput("token"),
+    owner: context.repo.owner,
     apiKey: getInput("apiKey"),
     base: getInput("base"),
   }; //expire可能有用不过需要微调，下面两行里的prefix前缀是干嘛的,顺别还有core
