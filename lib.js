@@ -9,7 +9,7 @@ const {
 const { count } = require("console");
 
 //这里引入request
-const request = require("request");
+//const request = require("request");
 const { waitForDebugger } = require("inspector");
 
 const getOctokit = (token) => {
