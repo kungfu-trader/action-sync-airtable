@@ -29,6 +29,7 @@ const sleep = function (ms) {
 
 async function* traversalPackagesGraphQL(octokit) {
   //循环遍历获取所有package的graphQL方法
+  console.log("开始历获取所有package");
   let hasNextPage = false; //是否有下一页，用以判断是否要继续循环查询
   const maxPerPage = 100; //每页最大值，这里定义为100，默认为30
   let graphResponse = await octokit.graphql(`
@@ -94,6 +95,7 @@ async function* traversalVersionsGraphQL(
   repository_name
 ) {
   //循环遍历获取所有Versions的graphQL方法
+  console.log("开始遍历获取所有version");
   let hasNextPage = false; //是否有下一页，用以判断是否要继续循环
   const maxPerPage = 100; //每页最大值，这里定义为100（可用最大为100），默认为30
   let graphResponse = await octokit.graphql(`
@@ -157,7 +159,9 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
+  console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
+  console.log(octokit); //测试一下octokit能否正常被获取
   //const octokit = github.getOctokit(argv.token);
   let countVersion = 0; //该变量用于存储当前位置 //存储数组内有效数据量，方便判别是否该发送
   let countPackage = 0; //store steps of for-loops
@@ -278,6 +282,7 @@ exports.airtableOfferedSendingMethod = async function (traversalResult, argv) {
 //下方为进一步深加工信息的功能组成（因为存在airtable的scripting性能瓶颈的可能性，所以在这里进行预处理,符合要求的再发送）
 async function* traversalRepoRefsGraphQL(octokit, repository_name) {
   //该函数提取来所有dev分支的后缀（理论上分支第二个v后面就是大版本号）
+  console.log("开始遍历所有refs");
   let hasNextPage = false; //let是可变变量,是否有下一页，用以判断是否要继续循环
   const maxPerPage = 100; //const是常量，每页最大值，这里定义为100，默认为30
   let graphRefs = await octokit.graphql(`
@@ -333,6 +338,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
 
 //下方用于遍历后缀数组和version数组进行匹配，找到我们想要的版本后并返回
 async function* comparePostFixAndVersions(postFixArray, versionsArray) {
+  console.log("开始比较");
   let matchedVersions = []; //存储匹配成功的versions
   let tempStoreMatchedVersion = versionsArray[0]; //临时存储匹配到的version，初始化为第一个元素
   let matchedFlag = false; //是否匹配成功的标志，初始化为false
@@ -15350,7 +15356,6 @@ const main = async function () {
   //最后添加了apiKey，这个存储的是airtable的写权限的密钥;以及base，这个存储的是airtable中的目标base
   //上述的apiKey和base暂时先用默认值赋值，定义在action.yml中
   //在quickFix后，自动对部分定义语句做了修改（简略），希望不要出错
-  console.log(argv.token); //测试一下token是否被正确获取
   const traversalMessage = await lib.traversalMessage(
     argv.apiKey,
     argv.base,
