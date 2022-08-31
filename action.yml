@@ -4,7 +4,6 @@ description: "Traversal all versions of kungfu-trader's packages"
 inputs:
   token:
     description: "Github token. E.g. secrets.GITHUB_TOKEN"
-    required: true
   action:
     description: "Choices [auto/prebuild/postbuild/verify]"
     default: "auto"

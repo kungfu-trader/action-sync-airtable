@@ -151,8 +151,8 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
-  //const octokit = getOctokit(argv.token);
-  const octokit = github.getOctokit(argv.token);
+  const octokit = getOctokit(argv.token);
+  //const octokit = github.getOctokit(argv.token);
   let countVersion = 0; //该变量用于存储当前位置 //存储数组内有效数据量，方便判别是否该发送
   let countPackage = 0; //store steps of for-loops
   let countSend = 0; //store send times
