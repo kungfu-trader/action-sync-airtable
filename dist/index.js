@@ -191,7 +191,8 @@ exports.traversalMessage = async function (argv) {
         continue;
       } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
       const subEnd = refsPost.length; //提取字符串长度
-      const refsPostFix = refsPost.subString(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
+      const refsPostFix = refsPost.substring(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
+      //substring为小写
       traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
     } //遍历repo所有分支并提取出大版本号存储起来
     for await (const graphVersion of traversalVersionsGraphQL(
@@ -347,7 +348,8 @@ async function* comparePostFixAndVersions(postFixArray, versionsArray) {
     const varLength = varInPostFixArray.length; //存储元素长度
     for (let varInVersionArray of versionsArray) {
       //利用for-of方式遍历数组时从下标为0的位置开始，也就是初始位置
-      const tempStoreSubString = varInVersionArray.subString(0, varLength); //提取version的前缀
+      //substring为小写
+      const tempStoreSubString = varInVersionArray.substring(0, varLength); //提取version的前缀
       if (varInPostFixArray === tempStoreSubString) {
         matchedFlag = true; //匹配成功
         tempStoreMatchedVersion = varInVersionArray; //存储version全称（不是tempStoreSubString）
