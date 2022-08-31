@@ -323,7 +323,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
     `);
     hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
     endCursor = graphRefs.repository.refs.pageInfo.endCursor;
-    for (const graphPostFix in graphRefs.repository.refs.edges) {
+    for (const graphPostFix of graphRefs.repository.refs.edges) {
       //注意nodes还是node要和查询结构一致
       yield graphPostFix;
     }
