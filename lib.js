@@ -155,7 +155,7 @@ async function* traversalVersionsGraphQL(
 exports.traversalMessage = async function (argv) {
   console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
-  console.log(octokit); //测试一下octokit能否正常被获取
+  //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
   //const octokit = github.getOctokit(argv.token);
   let countVersion = 0; //该变量用于存储当前位置 //存储数组内有效数据量，方便判别是否该发送
   let countPackage = 0; //store steps of for-loops
@@ -178,7 +178,7 @@ exports.traversalMessage = async function (argv) {
       repository_name
     )) {
       //外层每遍历到一个package，根据其对应到repo-name，遍历该仓库的所有dev分支
-      const refsPost = graphPostFix.name; //比如action-bump-version的“v2/v2.0”（筛选条件为refs/heads/dev，这样返回的是dev后的内容）
+      const refsPost = graphPostFix.node.name; //比如action-bump-version的“v2/v2.0”（筛选条件为refs/heads/dev，这样返回的是dev后的内容）
       const subStart = refsPost.lastIndexOf("v"); //最后一个v所在的位置
       if (subStart === -1) {
         console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
@@ -298,7 +298,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
   `); //这里是遍历repo的所有分支，目的是为了获取后三位（比如v2/v2.1的2.1）用于和version进行前缀匹配
   let endCursor = graphRefs.repository.refs.pageInfo.endCursor;
   hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
-  for (const graphPostFix of graphRefs.repository.refs.edges[0].node) {
+  for (const graphPostFix of graphRefs.repository.refs.edges) {
     //注意edges的拼写
     yield graphPostFix;
   }
@@ -323,7 +323,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
     `);
     hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
     endCursor = graphRefs.repository.refs.pageInfo.endCursor;
-    for (const graphPostFix of graphRefs.repository.refs.edges[0].node) {
+    for (const graphPostFix of graphRefs.repository.refs.edges) {
       //注意nodes还是node要和查询结构一致
       yield graphPostFix;
     }
