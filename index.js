@@ -21,6 +21,7 @@ const main = async function () {
   //最后添加了apiKey，这个存储的是airtable的写权限的密钥;以及base，这个存储的是airtable中的目标base
   //上述的apiKey和base暂时先用默认值赋值，定义在action.yml中
   //在quickFix后，自动对部分定义语句做了修改（简略），希望不要出错
+  console.log(argv.token); //测试一下token是否被正确获取
   const traversalMessage = await lib.traversalMessage(
     argv.apiKey,
     argv.base,
