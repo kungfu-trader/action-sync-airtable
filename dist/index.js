@@ -224,8 +224,34 @@ exports.traversalMessage = async function (argv) {
     if (matchedVersions.length === 0) {
       console.log(`${package_name}匹配成功数量为0`);
       continue;
+    } else if (matchedVersions.length === 1) {
+      console.log(`${package_name}匹配成功数量为1`);
+      const tempStoreResult = {
+        version_name,
+        package_name,
+        repository_name,
+      }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
+      //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
+      traversalResult.push(tempStoreResult); //把json塞进发送数组里
+      backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
+      countVersion++; //计数，每50条传送一次
+      sendFlag = false;
+      if (countVersion % 50 === 0) {
+        //满了50条
+        countVersion = 0; //计数置0
+        exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+        sendFlag = true; //提示已发送
+        traversalResult = []; //清空发送数组
+        countSend++; //发送次数加一
+        if (countSend === 5) {
+          countSend = 0; //发送次数置0
+          sleep(1000); //休眠1000ms，也就是1s
+          //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
+        }
+      }
+      continue;
     } else {
-      for (let version_name of matchedVersions) {
+      for (let version_name in matchedVersions) {
         //遍历matchedVersions数组
         const tempStoreResult = {
           version_name,
