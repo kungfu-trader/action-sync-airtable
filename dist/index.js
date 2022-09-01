@@ -55,7 +55,7 @@ async function* traversalPackagesGraphQL(octokit) {
           }`);
   let startCursor = graphResponse.organization.packages.pageInfo.endCursor; //最后位置，也是有下一页时的起始位置（after）
   hasNextPage = graphResponse.organization.packages.pageInfo.hasNextPage; //是否有下一页
-  for (const graphPackage of graphResponse.organization.packages.nodes) {
+  for (let graphPackage of graphResponse.organization.packages.nodes) {
     yield graphPackage; //更新值，触发调用位置的后续工作
   }
   while (hasNextPage) {
@@ -81,7 +81,7 @@ async function* traversalPackagesGraphQL(octokit) {
             }
           }
         }`); //这里的first后面所需为int，而加了引号之后就成为string，所以要去掉引号
-    for (const graphPackage of graphResponse.organization.packages.nodes) {
+    for (let graphPackage of graphResponse.organization.packages.nodes) {
       yield graphPackage; //更新值，触发调用位置的后续操作
     }
     hasNextPage = graphResponse.organization.packages.pageInfo.hasNextPage; //是否有下一页
@@ -121,7 +121,7 @@ async function* traversalVersionsGraphQL(
     graphResponse.repository.packages.nodes[0].versions.pageInfo.endCursor; //最终位置
   hasNextPage =
     graphResponse.repository.packages.nodes[0].versions.pageInfo.hasNextPage; //是否有下一页
-  for (const graphVersion of graphResponse.repository.packages.nodes[0].versions
+  for (let graphVersion of graphResponse.repository.packages.nodes[0].versions
     .nodes) {
     yield graphVersion; //更新值，触发调用位置的后续操作
   }
@@ -146,8 +146,8 @@ async function* traversalVersionsGraphQL(
             }
           }
         }`);
-    for (const graphVersion of graphResponse.repository.packages.nodes[0]
-      .versions.nodes) {
+    for (let graphVersion of graphResponse.repository.packages.nodes[0].versions
+      .nodes) {
       yield graphVersion;
     }
     hasNextPage =
@@ -172,7 +172,7 @@ exports.traversalMessage = async function (argv) {
   let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
   let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
   let traversalVersions = []; //该变量用于存储当前package的所有versions
-  for await (const graphPackage of traversalPackagesGraphQL(octokit)) {
+  for await (let graphPackage of traversalPackagesGraphQL(octokit)) {
     //遍历所有的package
     const package_name = graphPackage.name;
     const repository_name = graphPackage.repository.name; //这俩参数用于后续查询versions
@@ -182,8 +182,8 @@ exports.traversalMessage = async function (argv) {
       console.log(`由于version为空,跳过package: ${package_name}`); //对于deleted的package仍可遍历到，因此需要被剔除
       continue;
     } //package没有最新版本意味着被删除，所以跳过（之前想用提取前缀来判断的方法，但是不保证未来没有deleted开头的package，所以放弃）
-    console.log(`package最新version: ${graphPackage.latestVersion}`); //输出一下，看看查询结果是否正常看看问题在哪
-    for await (const graphPostFix of traversalRepoRefsGraphQL(
+    console.log(`package最新version: ${graphPackage.latestVersion.version}`); //输出一下，看看查询结果是否正常看看问题在哪
+    for await (let graphPostFix of traversalRepoRefsGraphQL(
       octokit,
       repository_name
     )) {
@@ -203,7 +203,7 @@ exports.traversalMessage = async function (argv) {
       console.log(`提取到的版本号为: ${refsPostFix}`); //输出一下，看看问题在哪里
       traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
     } //遍历repo所有分支并提取出大版本号存储起来
-    for await (const graphVersion of traversalVersionsGraphQL(
+    for await (let graphVersion of traversalVersionsGraphQL(
       octokit,
       package_name,
       repository_name
@@ -322,7 +322,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
   `); //这里是遍历repo的所有分支，目的是为了获取后三位（比如v2/v2.1的2.1）用于和version进行前缀匹配
   let endCursor = graphRefs.repository.refs.pageInfo.endCursor;
   hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
-  for (const graphPostFix of graphRefs.repository.refs.edges) {
+  for (let graphPostFix of graphRefs.repository.refs.edges) {
     //注意edges的拼写
     yield graphPostFix;
   }
@@ -347,7 +347,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
     `);
     hasNextPage = graphRefs.repository.refs.pageInfo.hasNextPage;
     endCursor = graphRefs.repository.refs.pageInfo.endCursor;
-    for (const graphPostFix of graphRefs.repository.refs.edges) {
+    for (let graphPostFix of graphRefs.repository.refs.edges) {
       //注意nodes还是node要和查询结构一致
       yield graphPostFix;
     }
