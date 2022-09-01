@@ -245,7 +245,7 @@ exports.traversalMessage = async function (argv) {
       }
       continue;
     } else {
-      for (let version_name in matchedVersions) {
+      for (let version_name of matchedVersions) {
         //遍历matchedVersions数组
         const tempStoreResult = {
           version_name,
