@@ -406,7 +406,8 @@ async function* comparePostFixAndVersions(postFixArray, versionsArray) {
   }
   console.log("匹配到的version总数为:");
   console.log(matchedVersions.length);
-  return matchedVersions; //返回存储着所有匹配结果的数组
+  //return matchedVersions; //返回存储着所有匹配结果的数组
+  yield matchedVersions;
 }
 
 //下方用于测试git-release-notes这个package的功能
