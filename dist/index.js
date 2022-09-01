@@ -159,7 +159,7 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
-  gitReleaseNotes();
+  //gitReleaseNotes();
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
   //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
@@ -212,13 +212,19 @@ exports.traversalMessage = async function (argv) {
       console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
       traversalVersions.push(versionName);
     } //遍历package所有version并存储起来
+    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的第一个refs: ${traversalRefs[0]}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的第一个versions: ${traversalVersions[0]}`); //输出一下，看看问题在哪里
+    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
+    console.log(typeof traversalRefs); //输出一下，看看问题在哪里
+    console.log(typeof traversalVersions); //输出一下，看看问题在哪里
     let matchedVersions = await comparePostFixAndVersions(
       traversalRefs,
       traversalVersions
     ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
-    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
-    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
-    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
+    console.log(`匹配到的version总数为: ${matchedVersions.length}`); //输出一下，看看问题在哪里
+    console.log(typeof matchedVersions); //输出一下，看看问题在哪里
     traversalRefs = []; //分支数组清零(避免重复)
     traversalVersions = []; //版本数组清零(避免重复)
     if (matchedVersions.length === 0) {
@@ -412,7 +418,8 @@ async function* comparePostFixAndVersions(postFixArray, versionsArray) {
   }
   console.log("匹配到的version总数为:");
   console.log(matchedVersions.length);
-  return matchedVersions; //返回存储着所有匹配结果的数组
+  //return matchedVersions; //返回存储着所有匹配结果的数组
+  yield matchedVersions;
 }
 
 //下方用于测试git-release-notes这个package的功能
@@ -19509,46 +19516,6 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__nccwpck_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__nccwpck_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__nccwpck_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/node module decorator */
 /******/ 	(() => {
 /******/ 		__nccwpck_require__.nmd = (module) => {
@@ -19564,12 +19531,9 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-"use strict";
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5438);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_0__);
+var exports = __webpack_exports__;
 console.log("start sync messages to airtable"); //在控制台输出信息
 //console.log("start traversal packages"); //输出测试,提示开始遍历仓库及版本
 /* eslint-disable no-restricted-globals */
@@ -19578,15 +19542,15 @@ const lib = (exports.lib = __nccwpck_require__(2909)); //用了quickFix,一时�
 //import { getInput, setFailed } from "@actions/core"; //这个是quickFix后的定义
 const core = __nccwpck_require__(2186); //这个是原先的定义
 //这个core是什么，看起来是actions下的（是的，这句就是引入，实际上这个包是官方提供的，具体功能包括Core functions for setting results, logging, registering secrets and exporting variables across actions）
- //这个也是quickFix后的（会不会报错呢）
-//const github = require('@actions/github');//这个不改
+//import { context } from "@actions/github"; //这个也是quickFix后的（会不会报错呢）
+const github = __nccwpck_require__(5438); //这个不改
 //@actions/core：提供了工作流命令、输入和输出变量、退出状态和调试消息的接口。
 //@actions/github：得到经过身份验证的 Octokit REST 客户端和对 GitHub 操作上下文的访问。
 const main = async function () {
-  const repo = _actions_github__WEBPACK_IMPORTED_MODULE_0__.context.repo; //看起来写注释时最好不要在大括号内？以免玄学错误
+  //const repo = context.repo; //看起来写注释时最好不要在大括号内？以免玄学错误
   const argv = {
     token: core.getInput("token"),
-    owner: repo.owner,
+    owner: github.context.repo.owner,
     apiKey: core.getInput("apiKey"),
     base: core.getInput("base"),
   }; //expire可能有用不过需要微调，下面两行里的prefix前缀是干嘛的,顺别还有core
@@ -19594,6 +19558,7 @@ const main = async function () {
   //上述的apiKey和base暂时先用默认值赋值，定义在action.yml中
   //在quickFix后，自动对部分定义语句做了修改（简略），希望不要出错
   //如果这里传参数用了argv.token那么lib中用的直接就是token而不是argv.token
+  console.log(argv); //输出测试一下看看问题在哪里
   const traversalMessage = await lib.traversalMessage(argv); //这里在定义传参数中也加入了apiKey和base
   //暂时先吧expireIn、onlyPrefix、exceptPrefix的定义和传参数删掉
   /*const deletedArtifacts = await lib.purgeArtifacts(
@@ -19603,6 +19568,8 @@ const main = async function () {
     argv.onlyPrefix,
     argv.exceptPrefix
   );*/ //函数名改
+  console.log(typeof traversalMessage); //输出测试一下看看问题在哪里
+  console.log(traversalMessage.length); //输出测试一下看看问题在哪里
   core.setOutput("traversal-messages", JSON.stringify(traversalMessage)); //这里测试一下，如果这个输出可以被hookdeck抓到，也是不错的
   //core.setOutput("deleted-artifacts", JSON.stringify(deletedArtifacts)); //这个是core提供的输出，暂时用不到，删
   //Outputs can be set with setOutput which makes them available to be mapped into inputs of other actions to ensure they are decoupled.
