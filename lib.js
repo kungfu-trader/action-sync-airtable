@@ -176,20 +176,25 @@ exports.traversalMessage = async function (argv) {
       console.log(`由于version为空,跳过package: ${package_name}`); //对于deleted的package仍可遍历到，因此需要被剔除
       continue;
     } //package没有最新版本意味着被删除，所以跳过（之前想用提取前缀来判断的方法，但是不保证未来没有deleted开头的package，所以放弃）
+    console.log(`package最新version: ${graphPackage.latestVersion}`); //输出一下，看看查询结果是否正常看看问题在哪
     for await (const graphPostFix of traversalRepoRefsGraphQL(
       octokit,
       repository_name
     )) {
       //外层每遍历到一个package，根据其对应到repo-name，遍历该仓库的所有dev分支
       const refsPost = graphPostFix.node.name; //比如action-bump-version的“v2/v2.0”（筛选条件为refs/heads/dev，这样返回的是dev后的内容）
+      console.log(`repo的refs有: ${refsPost}`); //输出一下，看看问题在哪里
       const subStart = refsPost.lastIndexOf("v"); //最后一个v所在的位置
+      console.log(`最后一个v所在位置: ${subStart}`); //输出一下，看看问题在哪里
       if (subStart === -1) {
         console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
         continue;
       } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
       const subEnd = refsPost.length; //提取字符串长度
+      console.log(`refs后缀长度: ${subEnd}`); //输出一下，看看问题在哪里
       const refsPostFix = refsPost.substring(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
       //substring为小写
+      console.log(`提取到的版本号为: ${refsPostFix}`); //输出一下，看看问题在哪里
       traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
     } //遍历repo所有分支并提取出大版本号存储起来
     for await (const graphVersion of traversalVersionsGraphQL(
@@ -198,12 +203,16 @@ exports.traversalMessage = async function (argv) {
       repository_name
     )) {
       const versionName = graphVersion.version;
+      console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
       traversalVersions.push(versionName);
     } //遍历package所有version并存储起来
-    const matchedVersions = await comparePostFixAndVersions(
+    let matchedVersions = await comparePostFixAndVersions(
       traversalRefs,
       traversalVersions
     ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
+    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
+    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
     traversalRefs = []; //分支数组清零(避免重复)
     traversalVersions = []; //版本数组清零(避免重复)
     if (matchedVersions.length === 0) {
