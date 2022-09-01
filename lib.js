@@ -153,6 +153,7 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
+  gitReleaseNotes();
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
   //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
@@ -371,4 +372,24 @@ async function* comparePostFixAndVersions(postFixArray, versionsArray) {
   console.log("匹配到的version总数为:");
   console.log(matchedVersions.length);
   return matchedVersions; //返回存储着所有匹配结果的数组
+}
+
+//下方用于测试git-release-notes这个package的功能
+async function* gitReleaseNotes() {
+  const releaseNotes = require("git-release-notes");
+
+  const OPTIONS = {
+    branch: "master",
+  };
+  const RANGE = "v2.0.0-alpha.0..v2.0.0-alpha.10";
+  const TEMPLATE = "markdown";
+
+  releaseNotes(OPTIONS, RANGE, TEMPLATE)
+    .then((changelog) => {
+      console.log(`Changelog between ${RANGE}\n\n${changelog}`);
+    })
+    .catch((ex) => {
+      console.error(ex);
+      process.exit(1);
+    });
 }
