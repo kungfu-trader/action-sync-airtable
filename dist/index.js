@@ -385,7 +385,7 @@ async function* gitReleaseNotes() {
   const releaseNotes = __nccwpck_require__(6110);
 
   const OPTIONS = {
-    branch: "master",
+    branch: "dev/v2/v2.0",
   };
   const RANGE = "v2.0.0-alpha.0..v2.0.0-alpha.10";
   const TEMPLATE = "markdown";
