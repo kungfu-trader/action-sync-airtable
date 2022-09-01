@@ -153,7 +153,7 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
-  gitReleaseNotes();
+  //gitReleaseNotes();
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
   //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
@@ -206,13 +206,19 @@ exports.traversalMessage = async function (argv) {
       console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
       traversalVersions.push(versionName);
     } //遍历package所有version并存储起来
+    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的第一个refs: ${traversalRefs[0]}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的第一个versions: ${traversalVersions[0]}`); //输出一下，看看问题在哪里
+    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
+    console.log(typeof traversalRefs); //输出一下，看看问题在哪里
+    console.log(typeof traversalVersions); //输出一下，看看问题在哪里
     let matchedVersions = await comparePostFixAndVersions(
       traversalRefs,
       traversalVersions
     ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
-    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
-    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
-    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
+    console.log(`匹配到的version总数为: ${matchedVersions.length}`); //输出一下，看看问题在哪里
+    console.log(typeof matchedVersions); //输出一下，看看问题在哪里
     traversalRefs = []; //分支数组清零(避免重复)
     traversalVersions = []; //版本数组清零(避免重复)
     if (matchedVersions.length === 0) {
