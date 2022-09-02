@@ -159,7 +159,7 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
-  //gitReleaseNotes();
+  gitReleaseNotes();
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
   //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
