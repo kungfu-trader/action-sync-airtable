@@ -311,14 +311,14 @@ exports.airtableOfferedSendingMethod = async function (traversalResult, argv) {
   //const base = new Airtable({apiKey}).base(argv.base);
   const base = new Airtable({ apiKey: `${apiKey}` }).base(`${argv.base}`);
   const storeStringify = JSON.stringify(traversalResult); //这里先string化，然后下方使用encodeURI进行编码，收到后使用decodeURI进行解码
-  const storeReplace = storeStringify.replace(/"/g, '\\"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
+  const storeReplace = storeStringify.replace(/"/g, '"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
   const storeBody = '"' + storeReplace + '"'; //首尾添加引号
   console.log(`即将传输的内容为: ${storeBody}`); //输出待传输的内容
   //let store_origin = storeBody; //自己传自己
   let backup = storeBody;
   base("origin-data").create(
     {
-      backup: store_origin,
+      backup: backup,
     },
     { typecast: true },
     function (err, record) {
