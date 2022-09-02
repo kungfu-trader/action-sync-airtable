@@ -241,6 +241,7 @@ exports.traversalMessage = async function (argv) {
         //满了50条
         countVersion = 0; //计数置0
         exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+        console.log("发送50条");
         sendFlag = true; //提示已发送
         traversalResult = []; //清空发送数组
         countSend++; //发送次数加一
@@ -268,6 +269,7 @@ exports.traversalMessage = async function (argv) {
           //满了50条
           countVersion = 0; //计数置0
           exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+          console.log("发送50条");
           sendFlag = true; //提示已发送
           traversalResult = []; //清空发送数组
           countSend++; //发送次数加一
@@ -306,10 +308,11 @@ exports.airtableOfferedSendingMethod = async function (traversalResult, argv) {
   const storeReplace = storeStringify.replace(/"/g, '\\"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
   const storeBody = '"' + storeReplace + '"'; //首尾添加引号
   console.log(`即将传输的内容为: ${storeBody}`); //输出待传输的内容
-  let store_origin = storeBody; //自己传自己
+  //let store_origin = storeBody; //自己传自己
+  let backup = storeBody;
   base("origin-data").create(
     {
-      store_origin: store_origin,
+      backup: backup,
     },
     { typecast: true },
     function (err, record) {
@@ -407,13 +410,13 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
         tempStoreMatchedVersion = varInVersionArray; //存储version全称（不是tempStoreSubString）
         console.log(`匹配到的版本为: ${tempStoreMatchedVersion}`); //输出匹配到的verison看看问题在哪里
         //遍历获取version时使用的是first顺序，最先发布的存在数组最前面，这样最后一个匹配到的就是该分支最新版本version
+        break; //首次匹配即退出循环
       }
     }
     if (matchedFlag === true) {
       matchedVersions.push(tempStoreMatchedVersion); //将最终匹配到的存入数组中
       console.log(`匹配成功的版本version: ${tempStoreMatchedVersion}`); //输出最终匹配到的vesion
       matchedFlag = false; //置为false
-      break; //首次匹配即退出循环
     } //每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
   }
   console.log("匹配到的version总数为:");
