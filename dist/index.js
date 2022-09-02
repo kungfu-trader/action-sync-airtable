@@ -304,7 +304,10 @@ exports.airtableOfferedSendingMethod = async function (traversalResult, argv) {
   const Airtable = __nccwpck_require__(2451); //引入airtable
   //这里将apiKey及base信息隐藏在action.yml中通过argv来传输
   //(仓库可视性改为public后action.yml如果能被浏览就会有airtable的key泄漏导致的内容失控风险)
-  const base = new Airtable(argv.apiKey).base(argv.base);
+  //const base = new Airtable(argv.apiKey).base(argv.base);
+  const apiKey = argv.apiKey;
+  //const base = new Airtable({apiKey}).base(argv.base);
+  const base = new Airtable({ apiKey: `${apiKey}` }).base(`${argv.base}`);
   const storeStringify = JSON.stringify(traversalResult); //这里先string化，然后下方使用encodeURI进行编码，收到后使用decodeURI进行解码
   const storeReplace = storeStringify.replace(/"/g, '\\"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
   const storeBody = '"' + storeReplace + '"'; //首尾添加引号
@@ -416,6 +419,7 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
       matchedVersions.push(tempStoreMatchedVersion); //将最终匹配到的存入数组中
       console.log(`匹配成功的版本version: ${tempStoreMatchedVersion}`); //输出最终匹配到的vesion
       matchedFlag = false; //置为false
+      break; //首次匹配即退出循环
     } //每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
   }
   console.log("匹配到的version总数为:");
