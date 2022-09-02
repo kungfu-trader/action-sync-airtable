@@ -232,6 +232,7 @@ exports.traversalMessage = async function (argv) {
       continue;
     } else if (matchedVersions.length === 1) {
       console.log(`${package_name}匹配成功数量为1`);
+      let version_name = matchedVersions[0];
       const tempStoreResult = {
         version_name,
         package_name,
