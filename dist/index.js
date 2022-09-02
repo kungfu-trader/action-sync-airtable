@@ -387,7 +387,8 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
 } //遍历repo所有分支的后缀获取大版本号
 
 //下方用于遍历后缀数组和version数组进行匹配，找到我们想要的版本后并返回
-async function* comparePostFixAndVersions(postFixArray, versionsArray) {
+//async function* comparePostFixAndVersions(postFixArray, versionsArray) {
+function comparePostFixAndVersions(postFixArray, versionsArray) {
   console.log("开始比较");
   let matchedVersions = []; //存储匹配成功的versions
   let tempStoreMatchedVersion = versionsArray[0]; //临时存储匹配到的version，初始化为第一个元素
@@ -418,12 +419,13 @@ async function* comparePostFixAndVersions(postFixArray, versionsArray) {
   }
   console.log("匹配到的version总数为:");
   console.log(matchedVersions.length);
-  //return matchedVersions; //返回存储着所有匹配结果的数组
-  yield matchedVersions;
+  return matchedVersions; //返回存储着所有匹配结果的数组
+  //yield matchedVersions;
 }
 
 //下方用于测试git-release-notes这个package的功能
-async function* gitReleaseNotes() {
+//async function* gitReleaseNotes() {
+async function gitReleaseNotes() {
   const releaseNotes = __nccwpck_require__(6110);
 
   const OPTIONS = {
