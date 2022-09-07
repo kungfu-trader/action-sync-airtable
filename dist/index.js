@@ -8,7 +8,8 @@
 const github = __nccwpck_require__(5438); //这里有个quickFix，切换到ES标准的引进（就是把require变成import？）
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
-const { Octokit } = __nccwpck_require__(6762); //Extendable client for GitHub's REST & GraphQL APIs
+const { Octokit } = __nccwpck_require__(2785);
+// const { Octokit } = require("@octokit/core"); //Extendable client for GitHub's REST & GraphQL APIs
 const {
   restEndpointMethods,
 } = __nccwpck_require__(3044);
@@ -19367,6 +19368,14 @@ function wrappy (fn, cb) {
     return ret
   }
 }
+
+
+/***/ }),
+
+/***/ 2785:
+/***/ ((module) => {
+
+module.exports = eval("require")("@octokit/rest");
 
 
 /***/ }),
