@@ -504,34 +504,38 @@ async function gitReleaseNotes() {
 // }
 
 exports.consoleMessages = async function (argv) {
-  const octokit = new Octokit({
-    auth: `${argv.token}`,
-  });
-  // /const octokit = getOctokit(argv.token);
-  console.log("开始调用");
-  // await traversalPackagesREST(octokit, argv);
-  // await traversalVersionsREST(octokit, argv);
-  // await testtraversalPackagesREST(octokit, argv);
-  const res =
-    await octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
-      package_type: "npm",
-      package_name: "action-bump-version",
-      org: "kungfu-trader",
+  try {
+    const octokit = new Octokit({
+      auth: `${argv.token}`,
     });
-  console.log(res);
-  console.log(res.items.properties.name);
-  console.log("完成调用");
-  const delete_pkg =
-    await octokit.rest.packages.deletePackageVersionForAuthenticatedUser({
-      package_type: "npm",
-      package_name: "test-rb-b",
-      package_version_id: "1.1.3",
-    });
-  process.on("unhandledRejection", (reason, p) => {
-    console.log("Promise: ", p, "Reason: ", reason);
-    // do something
-    //这里用来解决UnhandledPromiseRejectionWarning的问题
-  });
+    // /const octokit = getOctokit(argv.token);
+    console.log("开始调用");
+    // await traversalPackagesREST(octokit, argv);
+    // await traversalVersionsREST(octokit, argv);
+    // await testtraversalPackagesREST(octokit, argv);
+    const res =
+      await octokit.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+        package_type: "npm",
+        package_name: "test-rb-b",
+        org: "kungfu-trader",
+      });
+    console.log(
+      `-----[test-rb-b] First package_version is: ${res.data[0].name}`
+    );
+    console.log(`-----[test-rb-b] Package_version_id is: ${res.data[0].id}`);
+    console.log("完成调用");
+    const delete_pkg =
+      await octokit.rest.packages.deletePackageVersionForAuthenticatedUser({
+        package_type: "npm",
+        package_name: "test-rb-b",
+        package_version_id: res.data[0].id,
+      });
+    console.log(
+      `[INFO]-----Delete package test-rb-b(version:[${res.data[0].name}]) success!`
+    );
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 
