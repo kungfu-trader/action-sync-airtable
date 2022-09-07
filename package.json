@@ -1,6 +1,6 @@
 {
   "name": "@kungfu-trader/action-travelsal-package",
-  "version": "2.0.0-alpha.27",
+  "version": "2.0.0-alpha.28",
   "main": "dist/index.js",
   "repository": "https://github.com/kungfu-trader/action-traversal-packages",
   "author": "Kungfu Trader",
@@ -17,8 +17,8 @@
     "@actions/core": "^1.9.1",
     "@actions/github": "^5.0.0",
     "@octokit/core": "^3.5.1",
-    "@octokit/rest": "^19.0.4",
     "@octokit/plugin-rest-endpoint-methods": "^5.13.0",
+    "@octokit/rest": "^19.0.4",
     "airtable": "^0.11.4",
     "date-fns": "^2.28.0",
     "git-release-notes": "^5.0.0",
