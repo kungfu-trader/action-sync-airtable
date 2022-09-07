@@ -453,54 +453,54 @@ async function gitReleaseNotes() {
     });
 }
 
-async function testtraversalPackagesREST(octokit, argv) {
-  //遍历获取所有package的rest方法
-  /*const octokit = new Octokit({
-    auth: 'YOUR-TOKEN'
-  })*/
-  const responseRestPackage = await octokit.request(
-    "GET /orgs/{org}/{repo}/packages/npm",
-    {
-      org: "kungfu-trader",
-      repo: "action-bump-version",
-    }
-  );
-  console.log("开始输出package");
-  console.log(responseRestPackage.items.name); //
-  console.log("完成输出package");
-}
+// async function testtraversalPackagesREST(octokit, argv) {
+//   //遍历获取所有package的rest方法
+//   /*const octokit = new Octokit({
+//     auth: 'YOUR-TOKEN'
+//   })*/
+//   const responseRestPackage = await octokit.request(
+//     "GET /orgs/{org}/{repo}/packages/npm",
+//     {
+//       org: "kungfu-trader",
+//       repo: "action-bump-version",
+//     }
+//   );
+//   console.log("开始输出package");
+//   console.log(responseRestPackage.items.name); //
+//   console.log("完成输出package");
+// }
 
 //由于github在8月18日以后弃用了graphQL for packages，所以原有方法需改写成rest方法
-async function traversalPackagesREST(octokit, argv) {
-  //遍历获取所有package的rest方法
-  /*const octokit = new Octokit({
-    auth: 'YOUR-TOKEN'
-  })*/
-  const responseRestPackage = await octokit.request(
-    "GET /orgs/{org}/packages/npm",
-    {
-      org: "kungfu-trader",
-    }
-  );
-  console.log("开始输出package");
-  console.log(responseRestPackage.items.name); //
-  console.log("完成输出package");
-  return responseRestPackage;
-}
-async function traversalVersionsREST(octokit, argv) {
-  //遍历获取所有version的rest方法
-  const responseRestVersion = await octokit.request(
-    "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
-    {
-      package_type: "npm",
-      package_name: "action-sync-airtable",
-      org: "kungfu-trader",
-    }
-  );
-  console.log("开始输出version");
-  console.log(responseRestVersion.items.properties.name);
-  console.log("完成输出version");
-}
+// async function traversalPackagesREST(octokit, argv) {
+//   //遍历获取所有package的rest方法
+//   /*const octokit = new Octokit({
+//     auth: 'YOUR-TOKEN'
+//   })*/
+//   const responseRestPackage = await octokit.request(
+//     "GET /orgs/{org}/packages/npm",
+//     {
+//       org: "kungfu-trader",
+//     }
+//   );
+//   console.log("开始输出package");
+//   console.log(responseRestPackage.items.name); //
+//   console.log("完成输出package");
+//   return responseRestPackage;
+// }
+// async function traversalVersionsREST(octokit, argv) {
+//   //遍历获取所有version的rest方法
+//   const responseRestVersion = await octokit.request(
+//     "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+//     {
+//       package_type: "npm",
+//       package_name: "action-sync-airtable",
+//       org: "kungfu-trader",
+//     }
+//   );
+//   console.log("开始输出version");
+//   console.log(responseRestVersion.items.properties.name);
+//   console.log("完成输出version");
+// }
 
 exports.consoleMessages = async function (argv) {
   const octokit = new Octokit({
@@ -508,9 +508,17 @@ exports.consoleMessages = async function (argv) {
   });
   // /const octokit = getOctokit(argv.token);
   console.log("开始调用");
-  await traversalPackagesREST(octokit, argv);
-  await traversalVersionsREST(octokit, argv);
-  await testtraversalPackagesREST(octokit, argv);
+  // await traversalPackagesREST(octokit, argv);
+  // await traversalVersionsREST(octokit, argv);
+  // await testtraversalPackagesREST(octokit, argv);
+  const res =
+    octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
+      package_type: "npm",
+      package_name: "action-bump-version",
+      org: "kungfu-trader",
+    });
+  console.log(res);
+  console.log(res.items.properties.name);
   console.log("完成调用");
 };
 
