@@ -11,6 +11,7 @@ const { count } = require("console");
 //这里引入request
 //const request = require("request");
 const { waitForDebugger } = require("inspector");
+const { argv } = require("process");
 
 const getOctokit = (token) => {
   const _Octokit = Octokit.plugin(restEndpointMethods);
@@ -153,7 +154,7 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
-  gitReleaseNotes();
+  //gitReleaseNotes();//似乎没啥反应。。。
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
   //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
@@ -445,3 +446,42 @@ async function gitReleaseNotes() {
       process.exit(1);
     });
 }
+
+//由于github在8月18日以后弃用了graphQL for packages，所以原有方法需改写成rest方法
+async function* traversalPackagesREST(octokit, argv) {
+  //遍历获取所有package的rest方法
+  /*const octokit = new Octokit({
+    auth: 'YOUR-TOKEN'
+  })*/
+  const responseRestPackage = await octokit.request(
+    "GET /orgs/{org}/packages",
+    {
+      org: "kungfu-trader",
+    }
+  );
+  console.log("开始输出package");
+  console.log(responseRestPackage); //
+  console.log("完成输出package");
+}
+async function* traversalVersionsREST(octokit, argv) {
+  //遍历获取所有version的rest方法
+  const responseRestVersion = await octokit.request(
+    "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+    {
+      package_type: "npm",
+      package_name: "action-sync-airtable",
+      org: "kungfu-trader",
+    }
+  );
+  console.log("开始输出version");
+  console.log(responseRestVersion);
+  console.log("完成输出version");
+}
+
+exports.consoleMessages = async function (argv) {
+  const octokit = getOctokit(argv.token);
+  console.log("开始调用");
+  traversalPackagesREST(octokit, argv);
+  traversalVersionsREST(octokit, argv);
+  console.log("完成调用");
+};

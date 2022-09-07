@@ -17,6 +17,7 @@ const { count } = __nccwpck_require__(6206);
 //这里引入request
 //const request = require("request");
 const { waitForDebugger } = __nccwpck_require__(1405);
+const { argv } = __nccwpck_require__(7282);
 
 const getOctokit = (token) => {
   const _Octokit = Octokit.plugin(restEndpointMethods);
@@ -159,7 +160,7 @@ async function* traversalVersionsGraphQL(
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
 exports.traversalMessage = async function (argv) {
-  gitReleaseNotes();
+  //gitReleaseNotes();//似乎没啥反应。。。
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
   //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
@@ -451,6 +452,45 @@ async function gitReleaseNotes() {
       process.exit(1);
     });
 }
+
+//由于github在8月18日以后弃用了graphQL for packages，所以原有方法需改写成rest方法
+async function* traversalPackagesREST(octokit, argv) {
+  //遍历获取所有package的rest方法
+  /*const octokit = new Octokit({
+    auth: 'YOUR-TOKEN'
+  })*/
+  const responseRestPackage = await octokit.request(
+    "GET /orgs/{org}/packages",
+    {
+      org: "kungfu-trader",
+    }
+  );
+  console.log("开始输出package");
+  console.log(responseRestPackage); //
+  console.log("完成输出package");
+}
+async function* traversalVersionsREST(octokit, argv) {
+  //遍历获取所有version的rest方法
+  const responseRestVersion = await octokit.request(
+    "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+    {
+      package_type: "npm",
+      package_name: "action-sync-airtable",
+      org: "kungfu-trader",
+    }
+  );
+  console.log("开始输出version");
+  console.log(responseRestVersion);
+  console.log("完成输出version");
+}
+
+exports.consoleMessages = async function (argv) {
+  const octokit = getOctokit(argv.token);
+  console.log("开始调用");
+  traversalPackagesREST(octokit, argv);
+  traversalVersionsREST(octokit, argv);
+  console.log("完成调用");
+};
 
 
 /***/ }),
@@ -19394,6 +19434,14 @@ module.exports = require("path");
 
 /***/ }),
 
+/***/ 7282:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
+
+/***/ }),
+
 /***/ 5477:
 /***/ ((module) => {
 
@@ -19554,6 +19602,7 @@ const core = __nccwpck_require__(2186); //这个是原先的定义
 //这个core是什么，看起来是actions下的（是的，这句就是引入，实际上这个包是官方提供的，具体功能包括Core functions for setting results, logging, registering secrets and exporting variables across actions）
 //import { context } from "@actions/github"; //这个也是quickFix后的（会不会报错呢）
 const github = __nccwpck_require__(5438); //这个不改
+const { consoleMessages } = __nccwpck_require__(2909);
 //@actions/core：提供了工作流命令、输入和输出变量、退出状态和调试消息的接口。
 //@actions/github：得到经过身份验证的 Octokit REST 客户端和对 GitHub 操作上下文的访问。
 const main = async function () {
@@ -19563,7 +19612,9 @@ const main = async function () {
     owner: github.context.repo.owner,
     apiKey: core.getInput("apiKey"),
     base: core.getInput("base"),
-  }; //expire可能有用不过需要微调，下面两行里的prefix前缀是干嘛的,顺别还有core
+  };
+  /*
+  //expire可能有用不过需要微调，下面两行里的prefix前缀是干嘛的,顺别还有core
   //最后添加了apiKey，这个存储的是airtable的写权限的密钥;以及base，这个存储的是airtable中的目标base
   //上述的apiKey和base暂时先用默认值赋值，定义在action.yml中
   //在quickFix后，自动对部分定义语句做了修改（简略），希望不要出错
@@ -19578,11 +19629,14 @@ const main = async function () {
     argv.onlyPrefix,
     argv.exceptPrefix
   );*/ //函数名改
+  /*
   console.log(typeof traversalMessage); //输出测试一下看看问题在哪里
   console.log(traversalMessage.length); //输出测试一下看看问题在哪里
   core.setOutput("traversal-messages", JSON.stringify(traversalMessage)); //这里测试一下，如果这个输出可以被hookdeck抓到，也是不错的
   //core.setOutput("deleted-artifacts", JSON.stringify(deletedArtifacts)); //这个是core提供的输出，暂时用不到，删
   //Outputs can be set with setOutput which makes them available to be mapped into inputs of other actions to ensure they are decoupled.
+    */
+  await consoleMessages(argv);
 };
 
 if (process.env.GITHUB_ACTION) {
