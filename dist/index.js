@@ -459,7 +459,7 @@ async function testtraversalPackagesREST(octokit, argv) {
     auth: 'YOUR-TOKEN'
   })*/
   const responseRestPackage = await octokit.request(
-    "GET /orgs/{org}/{repo}/packages",
+    "GET /orgs/{org}/{repo}/packages/npm",
     {
       org: "kungfu-trader",
       repo: "action-bump-version",
@@ -477,7 +477,7 @@ async function traversalPackagesREST(octokit, argv) {
     auth: 'YOUR-TOKEN'
   })*/
   const responseRestPackage = await octokit.request(
-    "GET /orgs/{org}/packages",
+    "GET /orgs/{org}/packages/npm",
     {
       org: "kungfu-trader",
     }
