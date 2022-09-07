@@ -506,7 +506,7 @@ exports.consoleMessages = async function (argv) {
   // await traversalVersionsREST(octokit, argv);
   // await testtraversalPackagesREST(octokit, argv);
   const res =
-    octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
+    await octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
       package_type: "npm",
       package_name: "action-bump-version",
       org: "kungfu-trader",
@@ -514,4 +514,15 @@ exports.consoleMessages = async function (argv) {
   console.log(res);
   console.log(res.items.properties.name);
   console.log("完成调用");
+  const delete_pkg =
+    await octokit.rest.packages.deletePackageVersionForAuthenticatedUser({
+      package_type: "npm",
+      package_name: "test-rb-b",
+      package_version_id: "1.1.3",
+    });
+  process.on("unhandledRejection", (reason, p) => {
+    console.log("Promise: ", p, "Reason: ", reason);
+    // do something
+    //这里用来解决UnhandledPromiseRejectionWarning的问题
+  });
 };
