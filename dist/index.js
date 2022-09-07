@@ -8,7 +8,8 @@
 const github = __nccwpck_require__(5438); //这里有个quickFix，切换到ES标准的引进（就是把require变成import？）
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
-const { Octokit } = __nccwpck_require__(6762); //Extendable client for GitHub's REST & GraphQL APIs
+const { Octokit } = __nccwpck_require__(2785);
+// const { Octokit } = require("@octokit/core"); //Extendable client for GitHub's REST & GraphQL APIs
 const {
   restEndpointMethods,
 } = __nccwpck_require__(3044);
@@ -512,7 +513,7 @@ exports.consoleMessages = async function (argv) {
   // await traversalVersionsREST(octokit, argv);
   // await testtraversalPackagesREST(octokit, argv);
   const res =
-    octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
+    await octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
       package_type: "npm",
       package_name: "action-bump-version",
       org: "kungfu-trader",
@@ -520,6 +521,17 @@ exports.consoleMessages = async function (argv) {
   console.log(res);
   console.log(res.items.properties.name);
   console.log("完成调用");
+  const delete_pkg =
+    await octokit.rest.packages.deletePackageVersionForAuthenticatedUser({
+      package_type: "npm",
+      package_name: "test-rb-b",
+      package_version_id: "1.1.3",
+    });
+  process.on("unhandledRejection", (reason, p) => {
+    console.log("Promise: ", p, "Reason: ", reason);
+    // do something
+    //这里用来解决UnhandledPromiseRejectionWarning的问题
+  });
 };
 
 
@@ -19356,6 +19368,14 @@ function wrappy (fn, cb) {
     return ret
   }
 }
+
+
+/***/ }),
+
+/***/ 2785:
+/***/ ((module) => {
+
+module.exports = eval("require")("@octokit/rest");
 
 
 /***/ }),

@@ -2,7 +2,8 @@
 const github = require("@actions/github"); //这里有个quickFix，切换到ES标准的引进（就是把require变成import？）
 const fs = require("fs");
 const path = require("path");
-const { Octokit } = require("@octokit/core"); //Extendable client for GitHub's REST & GraphQL APIs
+const { Octokit } = require("@octokit/rest");
+// const { Octokit } = require("@octokit/core"); //Extendable client for GitHub's REST & GraphQL APIs
 const {
   restEndpointMethods,
 } = require("@octokit/plugin-rest-endpoint-methods");
@@ -506,7 +507,7 @@ exports.consoleMessages = async function (argv) {
   // await traversalVersionsREST(octokit, argv);
   // await testtraversalPackagesREST(octokit, argv);
   const res =
-    octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
+    await octokit.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg({
       package_type: "npm",
       package_name: "action-bump-version",
       org: "kungfu-trader",
@@ -514,4 +515,15 @@ exports.consoleMessages = async function (argv) {
   console.log(res);
   console.log(res.items.properties.name);
   console.log("完成调用");
+  const delete_pkg =
+    await octokit.rest.packages.deletePackageVersionForAuthenticatedUser({
+      package_type: "npm",
+      package_name: "test-rb-b",
+      package_version_id: "1.1.3",
+    });
+  process.on("unhandledRejection", (reason, p) => {
+    console.log("Promise: ", p, "Reason: ", reason);
+    // do something
+    //这里用来解决UnhandledPromiseRejectionWarning的问题
+  });
 };
