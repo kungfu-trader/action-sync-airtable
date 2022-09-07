@@ -523,13 +523,13 @@ exports.consoleMessages = async function (argv) {
       `-----[test-rb-b] First package_version is: ${res.data[0].name}`
     );
     console.log(`-----[test-rb-b] Package_version_id is: ${res.data[0].id}`);
+    console.log(`${res.data.length}`);
     console.log("完成调用");
-    const delete_pkg =
-      await octokit.rest.packages.deletePackageVersionForAuthenticatedUser({
-        package_type: "npm",
-        package_name: "test-rb-b",
-        package_version_id: res.data[0].id,
-      });
+    const delete_pkg = await octokit.rest.packages.deletePackageVersionForOrg({
+      package_type: "npm",
+      package_name: "test-rb-b",
+      package_version_id: res.data[0].id,
+    });
     console.log(
       `[INFO]-----Delete package test-rb-b(version:[${res.data[0].name}]) success!`
     );
@@ -537,6 +537,9 @@ exports.consoleMessages = async function (argv) {
     console.log(err);
   }
 };
+
+//  https://github.com/kungfu-trader/test-rollback-packages/pkgs/npm/test-rb-b/37231052
+//  https://api.github.com/user/packages/npm/test-rb-b/versions/37231052
 
 
 /***/ }),
