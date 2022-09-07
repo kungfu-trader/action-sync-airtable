@@ -453,6 +453,23 @@ async function gitReleaseNotes() {
     });
 }
 
+async function* testtraversalPackagesREST(octokit, argv) {
+  //遍历获取所有package的rest方法
+  /*const octokit = new Octokit({
+    auth: 'YOUR-TOKEN'
+  })*/
+  const responseRestPackage = await octokit.request(
+    "GET /orgs/{org}/{repo}/packages",
+    {
+      org: "kungfu-trader",
+      repo: "action-bump-version",
+    }
+  );
+  console.log("开始输出package");
+  console.log(responseRestPackage.items.name); //
+  console.log("完成输出package");
+}
+
 //由于github在8月18日以后弃用了graphQL for packages，所以原有方法需改写成rest方法
 async function* traversalPackagesREST(octokit, argv) {
   //遍历获取所有package的rest方法
@@ -466,7 +483,7 @@ async function* traversalPackagesREST(octokit, argv) {
     }
   );
   console.log("开始输出package");
-  console.log(responseRestPackage); //
+  console.log(responseRestPackage.items.name); //
   console.log("完成输出package");
 }
 async function* traversalVersionsREST(octokit, argv) {
@@ -480,15 +497,19 @@ async function* traversalVersionsREST(octokit, argv) {
     }
   );
   console.log("开始输出version");
-  console.log(responseRestVersion);
+  console.log(responseRestVersion.items.properties.name);
   console.log("完成输出version");
 }
 
 exports.consoleMessages = async function (argv) {
-  const octokit = getOctokit(argv.token);
+  const octokit = new Octokit({
+    auth: `${argv.token}`,
+  });
+  // /const octokit = getOctokit(argv.token);
   console.log("开始调用");
   traversalPackagesREST(octokit, argv);
   traversalVersionsREST(octokit, argv);
+  testtraversalPackagesREST(octokit, argv);
   console.log("完成调用");
 };
 
