@@ -42,7 +42,8 @@ const main = async function () {
   //core.setOutput("deleted-artifacts", JSON.stringify(deletedArtifacts)); //这个是core提供的输出，暂时用不到，删
   //Outputs can be set with setOutput which makes them available to be mapped into inputs of other actions to ensure they are decoupled.
     */
-  await lib.consoleMessages(argv);
+  const traversalMessage = await lib.traversalMessageRest(argv);
+  core.setOutput("traversal-messages", JSON.stringify(traversalMessage));
 };
 
 if (process.env.GITHUB_ACTION) {

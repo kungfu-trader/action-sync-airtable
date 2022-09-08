@@ -160,7 +160,7 @@ async function* traversalVersionsGraphQL(
 }
 
 //实现了上述graphQL查询方法后，下面构建调用函数完成整个查询，这里使用exports
-exports.traversalMessage = async function (argv) {
+exports.traversalMessageGraphQL = async function (argv) {
   //gitReleaseNotes();//似乎没啥反应。。。
   //console.log(argv.token); //测试一下argv是否正常传输该token
   const octokit = getOctokit(argv.token);
@@ -553,7 +553,10 @@ exports.consoleMessages = async function (argv) {
 //  https://github.com/kungfu-trader/test-rollback-packages/pkgs/npm/test-rb-b/37231052
 //  https://api.github.com/user/packages/npm/test-rb-b/versions/37231052
 
-async function traversalPackagesREST(argv) {
+async function* traversalPackagesREST(argv) {
+  //遍历组织下所有package的rest方法
+  //https://github.com/kungfu-trader/workflows/runs/8240771359?check_suite_focus=true#logs
+  //3号log
   const octokit = new Octokit({
     auth: `${argv.token}`,
   });
@@ -569,14 +572,196 @@ async function traversalPackagesREST(argv) {
         page: currentPage,
         per_page: maxPerPage,
       });
+    // hasNextPage =
+    //   restResponsePackages.data.length / maxPerPage > currentPage;
     hasNextPage =
       restResponsePackages.data.total_count / maxPerPage > currentPage;
-    /*for (const artifact of response.data.artifacts) {
-      yield artifact;
-    }*/
+    console.log(`package总数为: ${restResponsePackages.data.total_count}`);
+    for (const restPackage of restResponsePackages.data) {
+      yield restPackage;
+    }
     currentPage++;
   } while (hasNextPage);
+  console.log("rest查询组织下所有package结束");
 }
+
+async function* traversalVersionREST(argv, package_name) {
+  //遍历组织下所有package的rest方法
+  //https://github.com/kungfu-trader/workflows/runs/8224883811?check_suite_focus=true
+  //8号log
+  const octokit = new Octokit({
+    auth: `${argv.token}`,
+  });
+  let hasNextPage = false;
+  let currentPage = 1;
+  const maxPerPage = 100;
+  console.log("开始使用rest方法查询所有version");
+  do {
+    const restResponseVersions =
+      await octokit.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+        package_type: "npm",
+        package_name: package_name,
+        org: argv.owner,
+        page: currentPage,
+        per_page: maxPerPage,
+      });
+    // hasNextPage =
+    //   restResponsePackages.data.length / maxPerPage > currentPage;
+    hasNextPage =
+      restResponseVersions.data.total_count / maxPerPage > currentPage;
+    console.log(`version总数为: ${restResponseVersions.data.total_count}`);
+    for (const restVersion of restResponseVersions.data) {
+      yield restVersion;
+    }
+    currentPage++;
+    console.log(`查到的version之第${currentPage}页`);
+  } while (hasNextPage);
+}
+
+exports.traversalMessageRest = async function (argv) {
+  //gitReleaseNotes();//似乎没啥反应。。。
+  //console.log(argv.token); //测试一下argv是否正常传输该token
+  const octokit = getOctokit(argv.token);
+  //console.log(octokit); //测试一下octokit能否正常被获取(这里似乎是octokit所有的方法)
+  //const octokit = github.getOctokit(argv.token);
+  let countVersion = 0; //该变量用于存储当前位置 //存储数组内有效数据量，方便判别是否该发送
+  let countPackage = 0; //store steps of for-loops
+  let countSend = 0; //store send times
+  let sendFlag = false; //用于标记是否发送了
+  let traversalResult = []; //该变量用于每次发送前存储json信息
+  let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
+  let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
+  let traversalVersions = []; //该变量用于存储当前package的所有versions
+  for await (let restPackage of traversalPackagesREST(argv)) {
+    //遍历所有的package
+    const package_name = restPackage.name;
+    const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
+    console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
+    console.log(`package对应repo: ${repository_name}`); //输出repo看看问题在哪里
+    if (restPackage.version_count === 0) {
+      console.log(
+        `由于version为空${restPackage.version_count},跳过package: ${package_name}`
+      ); //对于deleted的package仍可遍历到，因此需要被剔除
+      continue;
+    } else if (restPackage.version_count === undefined) {
+      console.log(
+        `由于version未定义${restPackage.version_count},跳过package: ${package_name}`
+      );
+      continue;
+    } //package没有最新版本意味着被删除，所以跳过（之前想用提取前缀来判断的方法，但是不保证未来没有deleted开头的package，所以放弃）
+    //console.log(`package最新version: ${restPackage.latestVersion.version}`); //输出一下，看看查询结果是否正常看看问题在哪
+    for await (let graphPostFix of traversalRepoRefsGraphQL(
+      octokit,
+      repository_name
+    )) {
+      //外层每遍历到一个package，根据其对应到repo-name，遍历该仓库的所有dev分支
+      const refsPost = graphPostFix.node.name; //比如action-bump-version的“v2/v2.0”（筛选条件为refs/heads/dev，这样返回的是dev后的内容）
+      console.log(`repo的refs有: ${refsPost}`); //输出一下，看看问题在哪里
+      const subStart = refsPost.lastIndexOf("v"); //最后一个v所在的位置
+      console.log(`最后一个v所在位置: ${subStart}`); //输出一下，看看问题在哪里
+      if (subStart === -1) {
+        console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
+        continue;
+      } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
+      const subEnd = refsPost.length; //提取字符串长度
+      console.log(`refs后缀长度: ${subEnd}`); //输出一下，看看问题在哪里
+      const refsPostFix = refsPost.substring(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
+      //substring为小写
+      console.log(`提取到的版本号为: ${refsPostFix}`); //输出一下，看看问题在哪里
+      traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
+    } //遍历repo所有分支并提取出大版本号存储起来
+    for await (let restVersion of traversalVersionREST(argv, package_name)) {
+      const versionName = restVersion.data.name;
+      console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
+      traversalVersions.push(versionName);
+    } //遍历package所有version并存储起来
+    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的第一个refs: ${traversalRefs[0]}`); //输出一下，看看问题在哪里
+    console.log(`遍历得到的第一个versions: ${traversalVersions[0]}`); //输出一下，看看问题在哪里
+    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
+    console.log(typeof traversalRefs); //输出一下，看看问题在哪里
+    console.log(typeof traversalVersions); //输出一下，看看问题在哪里
+    let matchedVersions = await comparePostFixAndVersions(
+      traversalRefs,
+      traversalVersions
+    ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
+    console.log(`匹配到的version总数为: ${matchedVersions.length}`); //输出一下，看看问题在哪里
+    console.log(typeof matchedVersions); //输出一下，看看问题在哪里
+    traversalRefs = []; //分支数组清零(避免重复)
+    traversalVersions = []; //版本数组清零(避免重复)
+    if (matchedVersions.length === 0) {
+      console.log(`${package_name}匹配成功数量为0`);
+      continue;
+    } else if (matchedVersions.length === 1) {
+      console.log(`${package_name}匹配成功数量为1`);
+      let version_name = matchedVersions[0];
+      const tempStoreResult = {
+        version_name,
+        package_name,
+        repository_name,
+      }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
+      //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
+      traversalResult.push(tempStoreResult); //把json塞进发送数组里
+      backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
+      countVersion++; //计数，每50条传送一次
+      sendFlag = false;
+      if (countVersion % 50 === 0) {
+        //满了50条
+        countVersion = 0; //计数置0
+        exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+        console.log("发送50条");
+        sendFlag = true; //提示已发送
+        traversalResult = []; //清空发送数组
+        countSend++; //发送次数加一
+        if (countSend === 5) {
+          countSend = 0; //发送次数置0
+          sleep(1000); //休眠1000ms，也就是1s
+          //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
+        }
+      }
+      continue;
+    } else {
+      for (let version_name of matchedVersions) {
+        //遍历matchedVersions数组
+        const tempStoreResult = {
+          version_name,
+          package_name,
+          repository_name,
+        }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
+        //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
+        traversalResult.push(tempStoreResult); //把json塞进发送数组里
+        backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
+        countVersion++; //计数，每50条传送一次
+        sendFlag = false;
+        if (countVersion % 50 === 0) {
+          //满了50条
+          countVersion = 0; //计数置0
+          exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+          console.log("发送50条");
+          sendFlag = true; //提示已发送
+          traversalResult = []; //清空发送数组
+          countSend++; //发送次数加一
+          if (countSend === 5) {
+            countSend = 0; //发送次数置0
+            sleep(1000); //休眠1000ms，也就是1s
+            //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
+          }
+        }
+      }
+    }
+    countPackage++;
+    console.log(`当前package: ${package_name}`);
+    console.log(`countPackage: ${countPackage}`);
+  }
+  if (sendFlag === false) {
+    //如果全部循环完成后仍有内容未发送
+    sendFlag = true; //标记为已发送
+    exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+    traversalResult = []; //清空数组
+  }
+  return backUpTraversalMessage; //用于返回return，这里的返回值到了index.js的调用参数 const traversalMessage中，最后用于输出setOutput
+};
 
 
 /***/ }),
@@ -22036,7 +22221,8 @@ const main = async function () {
   //core.setOutput("deleted-artifacts", JSON.stringify(deletedArtifacts)); //这个是core提供的输出，暂时用不到，删
   //Outputs can be set with setOutput which makes them available to be mapped into inputs of other actions to ensure they are decoupled.
     */
-  await lib.consoleMessages(argv);
+  const traversalMessage = await lib.traversalMessageRest(argv);
+  core.setOutput("traversal-messages", JSON.stringify(traversalMessage));
 };
 
 if (process.env.GITHUB_ACTION) {
