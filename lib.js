@@ -395,8 +395,8 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
 function comparePostFixAndVersions(postFixArray, versionsArray) {
   console.log("开始比较");
   let matchedVersions = []; //存储匹配成功的versions
-  let tempStoreMatchedAlphaVersion = versionsArray[0]; //临时存储匹配到alpha的version，初始化为第一个元素
-  let tempStoreMatchedReleaseVersion = versionsArray[0]; //临时存储匹配到release的version，初始化为第一个元素
+  let tempStoreMatchedAlphaVersion = []; //临时存储匹配到alpha的version，初始化为第一个元素
+  let tempStoreMatchedReleaseVersion = []; //临时存储匹配到release的version，初始化为第一个元素
   let matchedFlag = false; //是否匹配成功的标志，初始化为false
   let matchAlphaFlag = false;
   let matchReleaseFlag = false;
@@ -415,8 +415,8 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
         matchedFlag = true; //匹配成功
         if (varInVersionArray.includes("alpha") && matchAlphaFlag === false) {
           matchAlphaFlag = true; //如果version中包含子串alpha且alpha版本还没匹配到
-          tempStoreMatchedAlphaVersion = varInVersionArray; //将匹配到的alpha版本存入变量中
-          console.log(`匹配到的版本为: ${tempStoreMatchedAlphaVersion}`); //输出匹配到的verison
+          tempStoreMatchedAlphaVersion.push(varInVersionArray); //将匹配到的alpha版本存入变量中
+          console.log(`匹配到的版本为: ${tempStoreMatchedAlphaVersion[0]}`); //输出匹配到的verison
         } else if (
           varInVersionArray.includes("alpha") &&
           matchAlphaFlag == true
@@ -425,8 +425,8 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
         } else if (matchReleaseFlag === false) {
           //如果release版本还没匹配到
           matchReleaseFlag = true;
-          tempStoreMatchedReleaseVersion = varInVersionArray;
-          console.log(`匹配到的版本为: ${tempStoreMatchedReleaseVersion}`); //输出匹配到的verison
+          tempStoreMatchedReleaseVersion.push(varInVersionArray);
+          console.log(`匹配到的版本为: ${tempStoreMatchedReleaseVersion[0]}`); //输出匹配到的verison
         }
         //tempStoreMatchedVersion = varInVersionArray; //存储version全称（不是tempStoreSubString）
         //console.log(`匹配到的版本为: ${tempStoreMatchedVersion}`); //输出匹配到的verison看看问题在哪里
@@ -440,34 +440,40 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
       }
     }
     if (matchedFlag === true) {
-      matchedVersions.push(tempStoreMatchedAlphaVersion); //将最终匹配到的存入数组中
-      matchedVersions.push(tempStoreMatchedReleaseVersion); //将最终匹配到的存入数组中
+      matchedVersions.push(tempStoreMatchedAlphaVersion[0]); //将最终匹配到的存入数组中
+      matchedVersions.push(tempStoreMatchedReleaseVersion[0]); //将最终匹配到的存入数组中
       console.log(
-        `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion}`
+        `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion[0]}`
       ); //输出最终匹配到的vesion
       console.log(
-        `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion}`
+        `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion[0]}`
       ); //输出最终匹配到的vesion
       matchAlphaFlag = false;
       matchReleaseFlag = false;
       matchedFlag = false; //置为false
+      tempStoreMatchedAlphaVersion = [];
+      tempStoreMatchedReleaseVersion = [];
     } //每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
     else if (matchAlphaFlag === true) {
-      matchedVersions.push(tempStoreMatchedAlphaVersion); //将最终匹配到的存入数组中
+      matchedVersions.push(tempStoreMatchedAlphaVersion[0]); //将最终匹配到的存入数组中
       console.log(
-        `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion}`
+        `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion[0]}`
       ); //输出最终匹配到的vesion
       matchAlphaFlag = false;
       matchReleaseFlag = false;
       matchedFlag = false;
+      tempStoreMatchedAlphaVersion = [];
+      tempStoreMatchedReleaseVersion = [];
     } else if ((matchReleaseFlag = true)) {
-      matchedVersions.push(tempStoreMatchedReleaseVersion); //将最终匹配到的存入数组中
+      matchedVersions.push(tempStoreMatchedReleaseVersion[0]); //将最终匹配到的存入数组中
       console.log(
-        `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion}`
+        `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion[0]}`
       ); //输出最终匹配到的vesion
       matchReleaseFlag = false;
       matchAlphaFlag = false;
       matchedFlag = false;
+      tempStoreMatchedAlphaVersion = [];
+      tempStoreMatchedReleaseVersion = [];
     }
   }
   console.log("匹配到的version总数为:");
