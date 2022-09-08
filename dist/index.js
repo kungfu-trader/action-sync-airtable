@@ -629,9 +629,9 @@ async function* traversalPackagesREST(argv) {
       });
     // hasNextPage =
     //   restResponsePackages.data.length / maxPerPage > currentPage;
-    hasNextPage =
-      restResponsePackages.data.total_count / maxPerPage > currentPage;
-    console.log(`package总数为: ${restResponsePackages.data.total_count}`);
+    // hasNextPage =
+    //   restResponsePackages.data.total_count / maxPerPage > currentPage;
+    //console.log(`package总数为: ${restResponsePackages.data.total_count}`);
     for (const restPackage of restResponsePackages.data) {
       yield restPackage;
     }
@@ -640,7 +640,7 @@ async function* traversalPackagesREST(argv) {
   console.log("rest查询组织下所有package结束");
 }
 
-async function* traversalVersionREST(argv, package_name) {
+async function* traversalVersionREST(argv, package_name, version_count) {
   //遍历组织下所有package的rest方法
   //https://github.com/kungfu-trader/workflows/runs/8224883811?check_suite_focus=true
   //8号log
@@ -662,9 +662,10 @@ async function* traversalVersionREST(argv, package_name) {
       });
     // hasNextPage =
     //   restResponsePackages.data.length / maxPerPage > currentPage;
-    hasNextPage =
-      restResponseVersions.data.total_count / maxPerPage > currentPage;
-    console.log(`version总数为: ${restResponseVersions.data.total_count}`);
+    // hasNextPage =
+    //   restResponseVersions.data.total_count / maxPerPage > currentPage;
+    hasNextPage = version_count / maxPerPage > currentPage;
+    //console.log(`version总数为: ${restResponseVersions.data.total_count}`);
     for (const restVersion of restResponseVersions.data) {
       yield restVersion;
     }
@@ -687,9 +688,11 @@ exports.traversalMessageRest = async function (argv) {
   let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
   let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
   let traversalVersions = []; //该变量用于存储当前package的所有versions
+  let versionSum = 0; //该变量存储package所有version数
   try {
     for await (let restPackage of traversalPackagesREST(argv)) {
       //遍历所有的package
+      versionSum = restPackage.version_count; //存储versoin总数
       const package_name = restPackage.name;
       console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
       const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
@@ -727,7 +730,11 @@ exports.traversalMessageRest = async function (argv) {
         console.log(`提取到的版本号为: ${refsPostFix}`); //输出一下，看看问题在哪里
         traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
       } //遍历repo所有分支并提取出大版本号存储起来
-      for await (let restVersion of traversalVersionREST(argv, package_name)) {
+      for await (let restVersion of traversalVersionREST(
+        argv,
+        package_name,
+        versionSum
+      )) {
         const versionName = restVersion.name;
         console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
         traversalVersions.push(versionName);
@@ -810,6 +817,7 @@ exports.traversalMessageRest = async function (argv) {
       countPackage++;
       console.log(`当前package: ${package_name}`);
       console.log(`countPackage: ${countPackage}`);
+      sleep(1000);
     }
     if (sendFlag === false) {
       //如果全部循环完成后仍有内容未发送
