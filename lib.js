@@ -665,7 +665,7 @@ exports.traversalMessageRest = async function (argv) {
       traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
     } //遍历repo所有分支并提取出大版本号存储起来
     for await (let restVersion of traversalVersionREST(argv, package_name)) {
-      const versionName = restVersion.data.name;
+      const versionName = restVersion.name;
       console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
       traversalVersions.push(versionName);
     } //遍历package所有version并存储起来
