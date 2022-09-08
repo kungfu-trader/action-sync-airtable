@@ -395,8 +395,11 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
 function comparePostFixAndVersions(postFixArray, versionsArray) {
   console.log("开始比较");
   let matchedVersions = []; //存储匹配成功的versions
-  let tempStoreMatchedVersion = versionsArray[0]; //临时存储匹配到的version，初始化为第一个元素
+  let tempStoreMatchedAlphaVersion = versionsArray[0]; //临时存储匹配到alpha的version，初始化为第一个元素
+  let tempStoreMatchedReleaseVersion = versionsArray[0]; //临时存储匹配到release的version，初始化为第一个元素
   let matchedFlag = false; //是否匹配成功的标志，初始化为false
+  let matchAlphaFlag = false;
+  let matchReleaseFlag = false;
   for (let varInPostFixArray of postFixArray) {
     //这里的元素已经过处理，可直接用
     console.log(`分支后缀为: ${varInPostFixArray}`); //输出大版本看看问题在哪里
@@ -410,17 +413,62 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
       console.log(`提取的版本前缀为: ${tempStoreSubString}`); //输出版本前缀看看问题在哪里
       if (varInPostFixArray === tempStoreSubString) {
         matchedFlag = true; //匹配成功
-        tempStoreMatchedVersion = varInVersionArray; //存储version全称（不是tempStoreSubString）
-        console.log(`匹配到的版本为: ${tempStoreMatchedVersion}`); //输出匹配到的verison看看问题在哪里
+        if (varInVersionArray.includes("alpha") && matchAlphaFlag === false) {
+          matchAlphaFlag = true; //如果version中包含子串alpha且alpha版本还没匹配到
+          tempStoreMatchedAlphaVersion = varInVersionArray; //将匹配到的alpha版本存入变量中
+          console.log(`匹配到的版本为: ${tempStoreMatchedAlphaVersion}`); //输出匹配到的verison
+        } else if (
+          varInVersionArray.includes("alpha") &&
+          matchAlphaFlag == true
+        ) {
+          continue; //如果仍为alpha版本则跳过
+        } else if (matchReleaseFlag === false) {
+          //如果release版本还没匹配到
+          matchReleaseFlag = true;
+          tempStoreMatchedReleaseVersion = varInVersionArray;
+          console.log(`匹配到的版本为: ${tempStoreMatchedReleaseVersion}`); //输出匹配到的verison
+        }
+        //tempStoreMatchedVersion = varInVersionArray; //存储version全称（不是tempStoreSubString）
+        //console.log(`匹配到的版本为: ${tempStoreMatchedVersion}`); //输出匹配到的verison看看问题在哪里
         //遍历获取version时使用的是first顺序，最先发布的存在数组最前面，这样最后一个匹配到的就是该分支最新版本version
-        break; //首次匹配即退出循环
+        if (matchAlphaFlag === true && matchReleaseFlag === true) {
+          break; //只有alpha和release都匹配成了才跳出
+        } else {
+          matchedFlag = false; //否则继续循环
+        }
+        //break; //首次匹配即退出循环
       }
     }
     if (matchedFlag === true) {
-      matchedVersions.push(tempStoreMatchedVersion); //将最终匹配到的存入数组中
-      console.log(`匹配成功的版本version: ${tempStoreMatchedVersion}`); //输出最终匹配到的vesion
+      matchedVersions.push(tempStoreMatchedAlphaVersion); //将最终匹配到的存入数组中
+      matchedVersions.push(tempStoreMatchedReleaseVersion); //将最终匹配到的存入数组中
+      console.log(
+        `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion}`
+      ); //输出最终匹配到的vesion
+      console.log(
+        `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion}`
+      ); //输出最终匹配到的vesion
+      matchAlphaFlag = false;
+      matchReleaseFlag = false;
       matchedFlag = false; //置为false
     } //每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
+    else if (matchAlphaFlag === true) {
+      matchedVersions.push(tempStoreMatchedAlphaVersion); //将最终匹配到的存入数组中
+      console.log(
+        `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion}`
+      ); //输出最终匹配到的vesion
+      matchAlphaFlag = false;
+      matchReleaseFlag = false;
+      matchedFlag = false;
+    } else if ((matchReleaseFlag = true)) {
+      matchedVersions.push(tempStoreMatchedReleaseVersion); //将最终匹配到的存入数组中
+      console.log(
+        `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion}`
+      ); //输出最终匹配到的vesion
+      matchReleaseFlag = false;
+      matchAlphaFlag = false;
+      matchedFlag = false;
+    }
   }
   console.log("匹配到的version总数为:");
   console.log(matchedVersions.length);
@@ -627,13 +675,14 @@ exports.traversalMessageRest = async function (argv) {
   let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
   let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
   let traversalVersions = []; //该变量用于存储当前package的所有versions
-  for await (let restPackage of traversalPackagesREST(argv)) {
-    //遍历所有的package
-    const package_name = restPackage.name;
-    const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
-    console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
-    console.log(`package对应repo: ${repository_name}`); //输出repo看看问题在哪里
-    /*if (restPackage.version_count === 0) {
+  try {
+    for await (let restPackage of traversalPackagesREST(argv)) {
+      //遍历所有的package
+      const package_name = restPackage.name;
+      console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
+      const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
+      console.log(`package对应repo: ${repository_name}`); //输出repo看看问题在哪里
+      /*if (restPackage.version_count === 0) {
       console.log(
         `由于version为空${restPackage.version_count},跳过package: ${package_name}`
       ); //对于deleted的package仍可遍历到，因此需要被剔除
@@ -646,80 +695,52 @@ exports.traversalMessageRest = async function (argv) {
     } //package没有最新版本意味着被删除，所以跳过（之前想用提取前缀来判断的方法，但是不保证未来没有deleted开头的package，所以放弃）
     //console.log(`package最新version: ${restPackage.latestVersion.version}`); //输出一下，看看查询结果是否正常看看问题在哪
     */
-    for await (let graphPostFix of traversalRepoRefsGraphQL(
-      octokit,
-      repository_name
-    )) {
-      //外层每遍历到一个package，根据其对应到repo-name，遍历该仓库的所有dev分支
-      const refsPost = graphPostFix.node.name; //比如action-bump-version的“v2/v2.0”（筛选条件为refs/heads/dev，这样返回的是dev后的内容）
-      console.log(`repo的refs有: ${refsPost}`); //输出一下，看看问题在哪里
-      const subStart = refsPost.lastIndexOf("v"); //最后一个v所在的位置
-      console.log(`最后一个v所在位置: ${subStart}`); //输出一下，看看问题在哪里
-      if (subStart === -1) {
-        console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
+      for await (let graphPostFix of traversalRepoRefsGraphQL(
+        octokit,
+        repository_name
+      )) {
+        //外层每遍历到一个package，根据其对应到repo-name，遍历该仓库的所有dev分支
+        const refsPost = graphPostFix.node.name; //比如action-bump-version的“v2/v2.0”（筛选条件为refs/heads/dev，这样返回的是dev后的内容）
+        console.log(`repo的refs有: ${refsPost}`); //输出一下，看看问题在哪里
+        const subStart = refsPost.lastIndexOf("v"); //最后一个v所在的位置
+        console.log(`最后一个v所在位置: ${subStart}`); //输出一下，看看问题在哪里
+        if (subStart === -1) {
+          console.log(`${repository_name}的dev分支${refsPost}并非标准命名`);
+          continue;
+        } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
+        const subEnd = refsPost.length; //提取字符串长度
+        console.log(`refs后缀长度: ${subEnd}`); //输出一下，看看问题在哪里
+        const refsPostFix = refsPost.substring(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
+        //substring为小写
+        console.log(`提取到的版本号为: ${refsPostFix}`); //输出一下，看看问题在哪里
+        traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
+      } //遍历repo所有分支并提取出大版本号存储起来
+      for await (let restVersion of traversalVersionREST(argv, package_name)) {
+        const versionName = restVersion.name;
+        console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
+        traversalVersions.push(versionName);
+      } //遍历package所有version并存储起来
+      console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
+      console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
+      console.log(`遍历得到的第一个refs: ${traversalRefs[0]}`); //输出一下，看看问题在哪里
+      console.log(`遍历得到的第一个versions: ${traversalVersions[0]}`); //输出一下，看看问题在哪里
+      console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
+      console.log(typeof traversalRefs); //输出一下，看看问题在哪里
+      console.log(typeof traversalVersions); //输出一下，看看问题在哪里
+      let matchedVersions = comparePostFixAndVersions(
+        traversalRefs,
+        traversalVersions
+      ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
+      console.log(`匹配到的version总数为: ${matchedVersions.length}`); //输出一下，看看问题在哪里
+      //console.log(typeof matchedVersions); //输出一下，看看问题在哪里
+      traversalRefs = []; //分支数组清零(避免重复)
+      traversalVersions = []; //版本数组清零(避免重复)
+      if (matchedVersions.length === 0) {
+        console.log(`${package_name}匹配成功数量为0`);
         continue;
-      } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
-      const subEnd = refsPost.length; //提取字符串长度
-      console.log(`refs后缀长度: ${subEnd}`); //输出一下，看看问题在哪里
-      const refsPostFix = refsPost.substring(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
-      //substring为小写
-      console.log(`提取到的版本号为: ${refsPostFix}`); //输出一下，看看问题在哪里
-      traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
-    } //遍历repo所有分支并提取出大版本号存储起来
-    for await (let restVersion of traversalVersionREST(argv, package_name)) {
-      const versionName = restVersion.name;
-      console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
-      traversalVersions.push(versionName);
-    } //遍历package所有version并存储起来
-    console.log(`遍历得到的refs的总数为: ${traversalRefs.length}`); //输出一下，看看问题在哪里
-    console.log(`遍历得到的versions的总数为: ${traversalVersions.length}`); //输出一下，看看问题在哪里
-    console.log(`遍历得到的第一个refs: ${traversalRefs[0]}`); //输出一下，看看问题在哪里
-    console.log(`遍历得到的第一个versions: ${traversalVersions[0]}`); //输出一下，看看问题在哪里
-    console.log("开始进行匹配比较"); ////输出一下，看看问题在哪里
-    console.log(typeof traversalRefs); //输出一下，看看问题在哪里
-    console.log(typeof traversalVersions); //输出一下，看看问题在哪里
-    let matchedVersions = await comparePostFixAndVersions(
-      traversalRefs,
-      traversalVersions
-    ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
-    console.log(`匹配到的version总数为: ${matchedVersions.length}`); //输出一下，看看问题在哪里
-    console.log(typeof matchedVersions); //输出一下，看看问题在哪里
-    traversalRefs = []; //分支数组清零(避免重复)
-    traversalVersions = []; //版本数组清零(避免重复)
-    if (matchedVersions.length === 0) {
-      console.log(`${package_name}匹配成功数量为0`);
-      continue;
-    } else if (matchedVersions.length === 1) {
-      console.log(`${package_name}匹配成功数量为1`);
-      let version_name = matchedVersions[0];
-      const tempStoreResult = {
-        version_name,
-        package_name,
-        repository_name,
-      }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
-      //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
-      traversalResult.push(tempStoreResult); //把json塞进发送数组里
-      backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
-      countVersion++; //计数，每50条传送一次
-      sendFlag = false;
-      if (countVersion % 50 === 0) {
-        //满了50条
-        countVersion = 0; //计数置0
-        exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
-        console.log("发送50条");
-        sendFlag = true; //提示已发送
-        traversalResult = []; //清空发送数组
-        countSend++; //发送次数加一
-        if (countSend === 5) {
-          countSend = 0; //发送次数置0
-          sleep(1000); //休眠1000ms，也就是1s
-          //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
-        }
-      }
-      continue;
-    } else {
-      for (let version_name of matchedVersions) {
-        //遍历matchedVersions数组
+      } else if (matchedVersions.length === 1) {
+        console.log(`${package_name}匹配成功数量为1`);
+        let version_name = matchedVersions[0];
         const tempStoreResult = {
           version_name,
           package_name,
@@ -744,17 +765,48 @@ exports.traversalMessageRest = async function (argv) {
             //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
           }
         }
+        continue;
+      } else {
+        for (let version_name of matchedVersions) {
+          //遍历matchedVersions数组
+          const tempStoreResult = {
+            version_name,
+            package_name,
+            repository_name,
+          }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
+          //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
+          traversalResult.push(tempStoreResult); //把json塞进发送数组里
+          backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
+          countVersion++; //计数，每50条传送一次
+          sendFlag = false;
+          if (countVersion % 50 === 0) {
+            //满了50条
+            countVersion = 0; //计数置0
+            exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+            console.log("发送50条");
+            sendFlag = true; //提示已发送
+            traversalResult = []; //清空发送数组
+            countSend++; //发送次数加一
+            if (countSend === 5) {
+              countSend = 0; //发送次数置0
+              sleep(1000); //休眠1000ms，也就是1s
+              //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
+            }
+          }
+        }
       }
+      countPackage++;
+      console.log(`当前package: ${package_name}`);
+      console.log(`countPackage: ${countPackage}`);
     }
-    countPackage++;
-    console.log(`当前package: ${package_name}`);
-    console.log(`countPackage: ${countPackage}`);
-  }
-  if (sendFlag === false) {
-    //如果全部循环完成后仍有内容未发送
-    sendFlag = true; //标记为已发送
-    exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
-    traversalResult = []; //清空数组
+    if (sendFlag === false) {
+      //如果全部循环完成后仍有内容未发送
+      sendFlag = true; //标记为已发送
+      exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+      traversalResult = []; //清空数组
+    }
+  } catch (err) {
+    console.log(err);
   }
   return backUpTraversalMessage; //用于返回return，这里的返回值到了index.js的调用参数 const traversalMessage中，最后用于输出setOutput
 };
