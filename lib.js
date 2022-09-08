@@ -679,8 +679,8 @@ exports.traversalMessageRest = async function (argv) {
     for await (let restPackage of traversalPackagesREST(argv)) {
       //遍历所有的package
       const package_name = restPackage.name;
-      const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
       console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
+      const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
       console.log(`package对应repo: ${repository_name}`); //输出repo看看问题在哪里
       /*if (restPackage.version_count === 0) {
       console.log(
