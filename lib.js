@@ -522,6 +522,7 @@ exports.consoleMessages = async function (argv) {
     const delete_pkg = await octokit.rest.packages.deletePackageVersionForOrg({
       package_type: "npm",
       package_name: "test-rb-b",
+      org: "kungfu-trader",
       package_version_id: res.data[0].id,
     });
     console.log(
