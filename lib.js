@@ -632,7 +632,7 @@ exports.traversalMessageRest = async function (argv) {
     const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
     console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
     console.log(`package对应repo: ${repository_name}`); //输出repo看看问题在哪里
-    if (restPackage.version_count === 0) {
+    /*if (restPackage.version_count === 0) {
       console.log(
         `由于version为空${restPackage.version_count},跳过package: ${package_name}`
       ); //对于deleted的package仍可遍历到，因此需要被剔除
@@ -644,6 +644,7 @@ exports.traversalMessageRest = async function (argv) {
       continue;
     } //package没有最新版本意味着被删除，所以跳过（之前想用提取前缀来判断的方法，但是不保证未来没有deleted开头的package，所以放弃）
     //console.log(`package最新version: ${restPackage.latestVersion.version}`); //输出一下，看看查询结果是否正常看看问题在哪
+    */
     for await (let graphPostFix of traversalRepoRefsGraphQL(
       octokit,
       repository_name
