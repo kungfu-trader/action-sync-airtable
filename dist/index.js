@@ -819,9 +819,11 @@ exports.traversalMessageRest = async function (argv) {
       console.log(`countPackage: ${countPackage}`);
       sleep(1000);
     }
-    if (sendFlag === false) {
+    //if (sendFlag === false) {
+    if (countVersion != 0) {
       //如果全部循环完成后仍有内容未发送
       sendFlag = true; //标记为已发送
+      console.log("剩下的也发送了");
       exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
       traversalResult = []; //清空数组
     }
