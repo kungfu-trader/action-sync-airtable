@@ -2,8 +2,8 @@
 const github = require("@actions/github"); //这里有个quickFix，切换到ES标准的引进（就是把require变成import？）
 const fs = require("fs");
 const path = require("path");
-const { Octokit } = require("@octokit/rest");
-// const { Octokit } = require("@octokit/core"); //Extendable client for GitHub's REST & GraphQL APIs
+//const { Octokit } = require("@octokit/rest");
+const { Octokit } = require("@octokit/core"); //Extendable client for GitHub's REST & GraphQL APIs
 const {
   restEndpointMethods,
 } = require("@octokit/plugin-rest-endpoint-methods");
