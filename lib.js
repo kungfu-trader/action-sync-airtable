@@ -507,19 +507,30 @@ exports.consoleMessages = async function (argv) {
     // await traversalPackagesREST(octokit, argv);
     // await traversalVersionsREST(octokit, argv);
     // await testtraversalPackagesREST(octokit, argv);
-    const res =
+    /*const res =
       await octokit.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
         package_type: "npm",
         package_name: "test-rb-b",
         org: "kungfu-trader",
       });
     console.log(
-      `-----[test-rb-b] First package_version is: ${res.data[0].name}`
+      `-----[test-rb-b] First package_version is: ${res.data[0].name}`//输出version名称
     );
-    console.log(`-----[test-rb-b] Package_version_id is: ${res.data[0].id}`);
-    console.log(`${res.data.length}`);
+    console.log(`-----[test-rb-b] Package_version_id is: ${res.data[0].id}`);//输出version对应id
+    console.log(`${res.data.length}`);//测试输出版本总数*/
+    let currentPage = 1;
+    let hasNextPage = false;
+    const maxPerPage = 100;
+    const res = await octokit.rest.packages.listPackagesForOrganization({
+      package_type: "npm",
+      org: "kungfu-trader",
+      page: currentPage,
+      per_page: maxPerPage,
+    });
+    //hasNextPage = restResponsePackages.data.total_count / maxPerPage > currentPage;
+    console.log(res.data[0]);
     console.log("完成调用");
-    const delete_pkg = await octokit.rest.packages.deletePackageVersionForOrg({
+    /*const delete_pkg = await octokit.rest.packages.deletePackageVersionForOrg({
       package_type: "npm",
       package_name: "test-rb-b",
       org: "kungfu-trader",
@@ -527,7 +538,7 @@ exports.consoleMessages = async function (argv) {
     });
     console.log(
       `[INFO]-----Delete package test-rb-b(version:[${res.data[0].name}]) success!`
-    );
+    );*/
   } catch (err) {
     console.log(err);
   }
@@ -535,3 +546,28 @@ exports.consoleMessages = async function (argv) {
 
 //  https://github.com/kungfu-trader/test-rollback-packages/pkgs/npm/test-rb-b/37231052
 //  https://api.github.com/user/packages/npm/test-rb-b/versions/37231052
+
+async function traversalPackagesREST(argv) {
+  const octokit = new Octokit({
+    auth: `${argv.token}`,
+  });
+  let hasNextPage = false;
+  let currentPage = 1;
+  const maxPerPage = 100;
+  console.log("开始使用rest方法查询所有package");
+  do {
+    const restResponsePackages =
+      await octokit.rest.packages.listPackagesForOrganization({
+        package_type: "npm",
+        org: "kungfu-trader",
+        page: currentPage,
+        per_page: maxPerPage,
+      });
+    hasNextPage =
+      restResponsePackages.data.total_count / maxPerPage > currentPage;
+    /*for (const artifact of response.data.artifacts) {
+      yield artifact;
+    }*/
+    currentPage++;
+  } while (hasNextPage);
+}
