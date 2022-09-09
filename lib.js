@@ -693,6 +693,8 @@ exports.traversalMessageRest = async function (argv) {
     for await (let restPackage of traversalPackagesREST(argv)) {
       //遍历所有的package
       versionSum = restPackage.version_count; //存储versoin总数
+      console.log(`rest返回的package的version总数为 ${versionSum}`);
+      console.log(typeof versionSum);
       const package_name = restPackage.name;
       console.log(`仓库下的package: ${package_name}`); //输出package看看问题在哪里
       const repository_name = restPackage.repository.name; //这俩参数用于后续查询versions
@@ -735,6 +737,8 @@ exports.traversalMessageRest = async function (argv) {
         package_name,
         versionSum
       )) {
+        console.log(`在这个函数里传入的参数值为 ${versionSum}`); //测试一下
+        console.log(typeof versionSum); //测试一下
         const versionName = restVersion.name;
         console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
         traversalVersions.push(versionName);
