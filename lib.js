@@ -688,11 +688,11 @@ exports.traversalMessageRest = async function (argv) {
   let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
   let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
   let traversalVersions = []; //该变量用于存储当前package的所有versions
-  let versionSum = 0; //该变量存储package所有version数
+  // let versionSum = 0; //该变量存储package所有version数
   try {
     for await (let restPackage of traversalPackagesREST(argv)) {
       //遍历所有的package
-      versionSum = restPackage.version_count; //存储versoin总数
+      const versionSum = restPackage.version_count; //存储versoin总数
       console.log(`rest返回的package的version总数为 ${versionSum}`);
       console.log(typeof versionSum);
       const package_name = restPackage.name;
