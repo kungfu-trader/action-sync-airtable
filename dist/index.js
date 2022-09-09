@@ -665,7 +665,21 @@ async function* traversalVersionREST(argv, package_name, version_count) {
     // hasNextPage =
     //   restResponseVersions.data.total_count / maxPerPage > currentPage;
     console.log(`version总数为: ${version_count}`);
-    hasNextPage = version_count / maxPerPage > currentPage;
+    //hasNextPage = version_count / maxPerPage > currentPage;
+    if (restResponseVersions.data.length === 100) {
+      hasNextPage = true;
+      console.log("version记录超过100条");
+    } else if (restResponseVersions.data.length === 0) {
+      hasNextPage = false;
+      console.log("rest查询到的version数为0");
+      //continue;
+      break;
+    } else if (restResponseVersions.data.length === undefined) {
+      hasNextPage = false;
+      console.log("rest查询到的version数为undefined");
+      //continue;
+      break;
+    }
     if (hasNextPage === false) {
       console.log(`没有下一页,hasNextPage值为${hasNextPage}`);
     } else {
