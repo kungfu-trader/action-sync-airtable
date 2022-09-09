@@ -737,6 +737,8 @@ exports.traversalMessageRest = async function (argv) {
         package_name,
         versionSum
       )) {
+        console.log(`在这个函数里传入的参数值为 ${versionSum}`); //测试一下
+        console.log(typeof versionSum); //测试一下
         const versionName = restVersion.name;
         console.log(`遍历到的version有: ${versionName}`); //输出一下，看看问题在哪里
         traversalVersions.push(versionName);
