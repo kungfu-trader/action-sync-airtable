@@ -664,7 +664,13 @@ async function* traversalVersionREST(argv, package_name, version_count) {
     //   restResponsePackages.data.length / maxPerPage > currentPage;
     // hasNextPage =
     //   restResponseVersions.data.total_count / maxPerPage > currentPage;
+    console.log(`version总数为: ${version_count}`);
     hasNextPage = version_count / maxPerPage > currentPage;
+    if (hasNextPage === false) {
+      console.log(`没有下一页,hasNextPage值为${hasNextPage}`);
+    } else {
+      console.log(`还有下一页,hasNextPage值为${hasNextPage}`);
+    }
     //console.log(`version总数为: ${restResponseVersions.data.total_count}`);
     for (const restVersion of restResponseVersions.data) {
       yield restVersion;
