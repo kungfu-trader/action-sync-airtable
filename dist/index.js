@@ -788,6 +788,13 @@ exports.traversalMessageRest = async function (argv) {
       } else {
         for (let version_name of matchedVersions) {
           //遍历matchedVersions数组
+          if (version_name === null) {
+            console.log("version_name为空,跳过json生成");
+            continue;
+          } else if (version_name === undefined) {
+            console.log("version_name未定义,跳过json生成");
+            continue;
+          }
           const tempStoreResult = {
             version_name,
             package_name,
