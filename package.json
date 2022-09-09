@@ -2,7 +2,7 @@
   "name": "@kungfu-trader/action-travelsal-package",
   "version": "2.0.0-alpha.41",
   "main": "dist/index.js",
-  "repository": "https://github.com/kungfu-trader/action-traversal-packages",
+  "repository": "https://github.com/kungfu-trader/action-sync-airtable",
   "author": "Kungfu Trader",
   "license": "Apache-2.0",
   "scripts": {
