@@ -699,6 +699,8 @@ exports.traversalMessageRest = async function (argv) {
     for await (let restPackage of traversalPackagesREST(argv)) {
       //遍历所有的package
       const versionSum = restPackage.version_count; //存储versoin总数
+      const packageID = restPackage.id;
+      console.log(`rest返回的package的id为 ${packageID}`);
       console.log(`rest返回的package的version总数为 ${versionSum}`);
       console.log(typeof versionSum);
       const package_name = restPackage.name;
