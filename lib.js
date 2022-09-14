@@ -792,7 +792,7 @@ exports.traversalMessageRest = async function (argv) {
         backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
         countVersion++; //计数，每50条传送一次
         sendFlag = false;
-        if (countVersion % 50 === 0) {
+        if (countVersion % 200 === 0) {
           //满了50条
           countVersion = 0; //计数置0
           exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
@@ -827,7 +827,7 @@ exports.traversalMessageRest = async function (argv) {
           backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
           countVersion++; //计数，每50条传送一次
           sendFlag = false;
-          if (countVersion % 50 === 0) {
+          if (countVersion % 200 === 0) {
             //满了50条
             countVersion = 0; //计数置0
             exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
