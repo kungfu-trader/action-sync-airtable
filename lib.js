@@ -793,7 +793,7 @@ exports.traversalMessageRest = async function (argv) {
         countVersion++; //计数，每50条传送一次
         sendFlag = false;
         if (countVersion % 200 === 0) {
-          //满了50条
+          //满了50条,为测试airtable处理json数量上限，修改为200条
           countVersion = 0; //计数置0
           exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
           console.log("发送50条");
