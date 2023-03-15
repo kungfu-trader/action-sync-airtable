@@ -15,10 +15,8 @@ inputs:
     default: "false"
   apiKey:
     descrpition: "store airtable's secret keys"
-    default: "keyV2K62gr8l53KRn"
   base:
     description: "store which base will be used in airtable"
-    default: "appd2XwFJcQWZM8fw"
 runs:
   using: "node12"
   main: "dist/index.js"
