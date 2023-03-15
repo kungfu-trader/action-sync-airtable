@@ -8,10 +8,8 @@ const axios = require("axios");
 const {
   restEndpointMethods,
 } = require("@octokit/plugin-rest-endpoint-methods");
-const { count } = require("console");
-
-const { waitForDebugger } = require("inspector");
 const { argv } = require("process");
+const semver = require("semver");
 
 const getOctokit = (token) => {
   const _Octokit = Octokit.plugin(restEndpointMethods);
@@ -21,42 +19,6 @@ const getOctokit = (token) => {
 const sleep = function (ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }; //这里加一个sleep用于实现睡眠等待，比如airtable的api每使用5次休息1s（单位为毫秒ms，应为1000）
-
-const getShowMessages = async (airtableApiKey) => {
-  let count = 0;
-  let offset = null;
-  let airtableMap = new Map();
-  do {
-    let url =
-      "https://api.airtable.com/v0/appd2XwFJcQWZM8fw/show-messages?pageSize=100&view=Grid%20view&offset=";
-    if (!!offset) {
-      url += offset;
-    }
-    let tryagain = true;
-    while (tryagain) {
-      try {
-        const resp = await axios.get(url, {
-          headers: { Authorization: `Bearer ${airtableApiKey}` },
-        });
-        resp.data.records.forEach((it) => {
-          // console.log(JSON.stringify(it));
-          airtableMap.set(it.fields.latest_version, it.fields["repo-name"]);
-          // console.log(it.fields.latest_version, " ", it.fields["repo-name"], " ", it.fields["package-name"]);
-          count++;
-        });
-        offset = resp.data.offset;
-        // console.log("pr offset:", offset);
-        tryagain = false;
-      } catch (e) {
-        console.error(e);
-        tryagain = true;
-      }
-    }
-  } while (offset);
-  console.log(`show-messages has "${count}" item`);
-  return airtableMap;
-
-}
 
 //下方函数的功能为遍历组织下所有package的rest实现方法（由于graphQL for package已被github弃用所以重写相关方法）
 async function* traversalPackagesREST(argv) {
@@ -76,7 +38,7 @@ async function* traversalPackagesREST(argv) {
         per_page: maxPerPage,
       }); //使用rest方法列举组织下所有的package，后续package数量超过100后这里要想个办法看看hasNextPage是否应该为true
     for (const restPackage of restResponsePackages.data) {
-      console.log("================package: ", restPackage.name);
+      // console.log("================package: ", restPackage);
       yield restPackage;
     }
     currentPage++;
@@ -196,7 +158,7 @@ async function* traversalRepoRefsGraphQL(octokit, repository_name) {
 
 //下方函数的功能是遍历后缀数组和version数组进行匹配，找到我们想要的版本后并返回
 function comparePostFixAndVersions(postFixArray, versionsArray) {
-  console.log("开始比较");
+  // console.log("开始比较");
   let matchedVersions = []; //存储匹配成功的versions
   let tempStoreMatchedAlphaVersion = []; //临时存储匹配到alpha的version，初始化为第一个元素
   let tempStoreMatchedReleaseVersion = []; //临时存储匹配到release的version，初始化为第一个元素
@@ -237,12 +199,6 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
     if (matchedFlag === true) {
       matchedVersions.push(tempStoreMatchedAlphaVersion[0]); //将最终匹配到的存入数组中
       matchedVersions.push(tempStoreMatchedReleaseVersion[0]); //将最终匹配到的存入数组中
-      // console.log(
-      //   `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion[0]}`
-      // ); //输出最终匹配到的vesion
-      // console.log(
-      //   `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion[0]}`
-      // ); //输出最终匹配到的vesion
       matchAlphaFlag = false;
       matchReleaseFlag = false;
       matchedFlag = false; //置为false
@@ -251,9 +207,6 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
     } //每一个大版本遍历版本数组进行前缀匹配，并将匹配成功的结果存入数组中
     else if (matchAlphaFlag === true) {
       matchedVersions.push(tempStoreMatchedAlphaVersion[0]); //将最终匹配到的存入数组中
-      // console.log(
-      //   `匹配成功的alpha版本version: ${tempStoreMatchedAlphaVersion[0]}`
-      // ); //输出最终匹配到的vesion
       matchAlphaFlag = false;
       matchReleaseFlag = false;
       matchedFlag = false;
@@ -261,9 +214,6 @@ function comparePostFixAndVersions(postFixArray, versionsArray) {
       tempStoreMatchedReleaseVersion = [];
     } else if ((matchReleaseFlag = true)) {
       matchedVersions.push(tempStoreMatchedReleaseVersion[0]); //将最终匹配到的存入数组中
-      // console.log(
-      //   `匹配成功的release版本version: ${tempStoreMatchedReleaseVersion[0]}`
-      // ); //输出最终匹配到的vesion
       matchReleaseFlag = false;
       matchAlphaFlag = false;
       matchedFlag = false;
@@ -282,11 +232,6 @@ exports.airtableOfferedSendingMethod = async function (traversalResult, argv) {
   const apiKey = argv.apiKey; //获取apiKey
   const base = new Airtable({ apiKey: `${apiKey}` }).base(`${argv.base}`); //获取base的ID
   const storeStringify = JSON.stringify(traversalResult); //将json数组string化
-  // const storeReplace = storeStringify.replace(/"/g, ''); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
-  // const storeReplace = storeStringify.replace(/"/g, '\\"'); //使用正则表达式进行替换（这里要用\\"，如果只用一个\则看不到变化）
-  // const storeBody = '"' + storeReplace + '"'; //首尾添加引号
-
-  // console.log(`storeStringify: ${storeStringify}`); //控制台输出待传输的内容
   // console.log(`即将传输的内容为: ${storeBody}`); //控制台输出待传输的内容
   let backup = storeStringify; //要传输内容存入列名backup同名变量中，减少check format带来的单双引号变化影响传输结果
   base("origin-data").create(
@@ -308,13 +253,52 @@ exports.airtableOfferedSendingMethod = async function (traversalResult, argv) {
   });
 };
 
-const createAirtableRecord = async (url, dataList, airtableApiKey) => {
-  let tryagain = true;
-  while (tryagain) {
+function getVersionWithoutPatch(version) {
+  const sVer = semver.parse(version);
+  let verWithPatch = sVer.prerelease.length > 0 ? "-" + sVer.prerelease[0] : "";
+  verWithPatch = sVer.major + "." + sVer.minor + verWithPatch;
+  return verWithPatch;
+}
+
+async function sendVersionToAirtable(dataList, argv) {
+  const l = dataList.length;
+  let i = 10;
+  const url = "https://api.airtable.com/v0/appd2XwFJcQWZM8fw/data";
+  const mergFields = ["Package", "Versionkey"];
+  while (i <= l) {
+    const ret = await upsertAirtable(
+      url,
+      mergFields,
+      dataList.slice(i - 10, i),
+      argv.apiKey
+    );
+    console.log("send index ", i, " result ", ret);
+    i += 10;
+  }
+  if (i - 10 > l) {
+    const ret = await upsertAirtable(
+      url,
+      mergFields,
+      dataList.slice(i - 10),
+      argv.apiKey
+    );
+    console.log("send index ", l, " result ", ret);
+  }
+  return true;
+}
+
+async function upsertAirtable(url, mergFields, dataList, airtableApiKey) {
+  let tryagain = 0;
+  while (tryagain < 3) {
     try {
-      const r = await axios.post(
+      const r = await axios.put(
         url,
-        { records: dataList },
+        {
+          performUpsert: {
+            fieldsToMergeOn: mergFields,
+          },
+          records: dataList,
+        },
         {
           headers: {
             Authorization: `Bearer ${airtableApiKey}`,
@@ -322,28 +306,25 @@ const createAirtableRecord = async (url, dataList, airtableApiKey) => {
           },
         }
       );
-      console.log(`createAirtableRecord ${url} ${r.status}`);
-      tryagain = false;
+      console.log(`upsertAirtable ${url} ${r}`);
+      return true;
     } catch (e) {
       console.log(e);
-      tryagain = true;
+      tryagain++;
     }
   }
+  return false;
 }
 
 exports.traversalMessageRest = async function (argv) {
   const octokit = getOctokit(argv.token);
   let countVersion = 0; //该变量用于存储当前位置 //存储数组内有效数据量，方便判别是否该发送
   let countPackage = 0; //store steps of for-loops
-  let countSend = 0; //store send times
   let sendFlag = false; //用于标记是否发送了
   let traversalResult = []; //该变量用于每次发送前存储json信息
   let backUpTraversalMessage = []; //该变量用于存储所有json信息用于返回（return）
   let traversalRefs = []; //该变量用于存储当前package对应的repo的所有分支，用于与version进行字符串匹配
   let traversalVersions = []; //该变量用于存储当前package的所有versions
-  let dataList = [];
-  const url = "https://api.airtable.com/v0/appd2XwFJcQWZM8fw/show-messages";
-  const record = await getShowMessages(argv.apiKey);
   try {
     for await (let restPackage of traversalPackagesREST(argv)) {
       //遍历所有的package
@@ -364,7 +345,6 @@ exports.traversalMessageRest = async function (argv) {
         } //如果该dev分支并非标准分支命名，不含字母v，返回值为-1，跳过并给出提示
         const subEnd = refsPost.length; //提取字符串长度
         const refsPostFix = refsPost.substring(subStart + 1, subEnd); //提取子串，这里获取的就是“v2/v2.0”里的“2.0”
-        //substring为小写
         traversalRefs.push(refsPostFix); //子串仍为字符串类型（后续可以使用length，而如果是float则不能用length），存进数组
       } //遍历repo所有分支并提取出大版本号存储起来
       for await (let restVersion of traversalVersionREST(
@@ -376,11 +356,11 @@ exports.traversalMessageRest = async function (argv) {
         traversalVersions.push(versionName);
         // console.log(`${package_name} ${JSON.stringify(restVersion)} ... ${versionName}`)
       } //遍历package所有version并存储起来
-      // console.log(`traversalRefs:${traversalRefs} ====  traversalVersions:${traversalVersions}`);
       let matchedVersions = comparePostFixAndVersions(
         traversalRefs,
         traversalVersions
       ); //将大版本数组traversalRefs和version数组traversalVersions发送过去，返回匹配后的version数组matchedVersions
+      // console.log("333", matchedVersions);
       console.log(`匹配到的version总数为: ${matchedVersions.length}`);
       traversalRefs = []; //分支数组清零(避免重复)
       traversalVersions = []; //版本数组清零(避免重复)
@@ -390,46 +370,20 @@ exports.traversalMessageRest = async function (argv) {
       } else if (matchedVersions.length === 1) {
         console.log(`${package_name}匹配成功数量为1`);
         let version_name = matchedVersions[0];
+        const versionWithoutPatch = getVersionWithoutPatch(version_name);
         const tempStoreResult = {
-          version_name,
-          package_name,
-          repository_name,
+          fields: {
+            Package: package_name,
+            Version: version_name,
+            Repo: repository_name,
+            Versionkey: versionWithoutPatch,
+          },
         }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
-        const key = `${repository_name}/${package_name}:${version_name}`;
-        if(!record.has(key)){
-          dataList.push({
-            "fields": {
-              "latest_version": key,
-              "repo-name": repository_name,
-              "package-name": package_name
-            }
-          });
-          if(dataList.length == 10){
-            await createAirtableRecord(url, dataList, argv.apiKey);
-            dataList = [];
-          }
-
-        }
-        
-        //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
+        console.log("tempStoreResult 1", tempStoreResult);
         traversalResult.push(tempStoreResult); //把json塞进发送数组里
         backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
         countVersion++; //计数，每50条传送一次
         sendFlag = false;
-        // if (countVersion % 50 === 0) {
-        //   //满了50条,后续可以测试airtable处理json数量上限，比如此处修改为200条
-        //   countVersion = 0; //计数置0
-        //   exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
-        //   console.log("发送50条");
-        //   sendFlag = true; //提示已发送
-        //   traversalResult = []; //清空发送数组
-        //   countSend++; //发送次数加一
-        //   if (countSend === 5) {
-        //     countSend = 0; //发送次数置0
-        //     sleep(1000); //休眠1000ms，也就是1s
-        //     //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
-        //   }
-        // }
         continue;
       } else {
         for (let version_name of matchedVersions) {
@@ -441,59 +395,29 @@ exports.traversalMessageRest = async function (argv) {
             // console.log("version_name未定义,跳过json生成");
             continue;
           }
+          const versionWithoutPatch = getVersionWithoutPatch(version_name);
           const tempStoreResult = {
-            version_name,
-            package_name,
-            repository_name,
+            fields: {
+              Package: package_name,
+              Version: version_name,
+              Repo: repository_name,
+              Versionkey: versionWithoutPatch,
+            },
           }; //建立json，包含版本名version_name、包名package_name、仓库名repository_name
-          const key = `${repository_name}/${package_name}:${version_name}`;
-        if(!record.has(key)){
-          dataList.push({
-            "fields": {
-              "latest_version": key,
-              "repo-name": repository_name,
-              "package-name": package_name
-            }
-          });
-          if(dataList.length == 10){
-            await createAirtableRecord(url, dataList, argv.apiKey);
-            dataList = [];
-          }
-        }
-          //如果直接传，会达到每秒5次的接口使用率上限，同时还会产生超级多条记录，不便于处理（当然接口上限也好解决，每5条等1s后再发送下5条）
-          // console.log("tempStoreResult ", tempStoreResult);
+          console.log("tempStoreResult 2", tempStoreResult);
           traversalResult.push(tempStoreResult); //把json塞进发送数组里
           backUpTraversalMessage.push(tempStoreResult); //这里也存一份（备份）
           countVersion++; //计数，每50条传送一次
           sendFlag = false;
-          // if (countVersion % 50 === 0) {
-          //   countVersion = 0; //每50条，计数置0
-          // await  exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
-          //   console.log("发送50条");
-          //   sendFlag = true; //提示已发送
-          //   traversalResult = []; //清空发送数组
-          //   countSend++; //发送次数加一
-          //   if (countSend === 5) {
-          //     countSend = 0; //每发送5次，发送次数置0
-          //     sleep(1000); //休眠1000ms，也就是1s
-          //     //置0操作也可以用取余来替代（比如===5然后置0等价于对5取余===0不用置0）
-          //   }
-          // }
         }
       }
       countPackage++;
-      console.log(`当前package: ${package_name}`);
-      // sleep(1000);
-    }
-    if(dataList.length > 0){
-      await createAirtableRecord(url, dataList, argv.apiKey);
-      dataList = [];
     }
     if (countVersion != 0) {
       //如果全部循环完成后仍有内容未发送
       sendFlag = true; //标记为已发送
-      console.log("剩下的也发送了", countVersion);
-      await exports.airtableOfferedSendingMethod(traversalResult, argv); //调用发送
+      console.log("total item number", countVersion);
+      await sendVersionToAirtable(traversalResult, argv);
       traversalResult = []; //清空数组
     }
   } catch (err) {
