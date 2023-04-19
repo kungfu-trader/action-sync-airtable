@@ -18,5 +18,5 @@ inputs:
   base:
     description: "store which base will be used in airtable"
 runs:
-  using: "node12"
+  using: "node16"
   main: "dist/index.js"
